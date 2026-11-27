@@ -22,7 +22,8 @@ export function SeloVencimento({ data }: { data: string | null }) {
 }
 
 export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
-  const custoG = custoPorGrama(p.custo_estoque_cents, p.estoque_dg);
+  // "Pago/g" é o de referência do produto; sem ele, o custo médio do estoque.
+  const custoG = p.custo_ref_cents_por_grama ?? custoPorGrama(p.custo_estoque_cents, p.estoque_dg);
   const margem = custoG !== null ? margemBps(p.preco_cents_por_grama, custoG) : null;
   const valorVenda = priceFor(p.estoque_dg, p.preco_cents_por_grama);
 
@@ -63,13 +64,14 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
 
       <dl className="mt-auto grid grid-cols-3 border-t border-line text-center text-[11px]">
         <div className="px-2 py-2">
-          <dt className="text-faint">Custo/g</dt>
+          <dt className="text-faint">Pago/g</dt>
           <dd className="tabular-nums text-muted">{custoG !== null ? formatBRL(custoG) : "—"}</dd>
         </div>
         <div className="border-x border-line px-2 py-2">
-          <dt className="text-faint">Margem</dt>
+          <dt className="text-faint">Lucro/g</dt>
           <dd className={cn("tabular-nums", margem !== null && margem < 0 ? "text-red-400" : "text-muted")}>
-            {margem !== null ? formatBps(margem) : "—"}
+            {custoG !== null ? `${formatBRL(p.preco_cents_por_grama - custoG)}` : "—"}
+            {margem !== null && <span className="ml-1 text-faint">({formatBps(margem)})</span>}
           </dd>
         </div>
         <div className="px-2 py-2">

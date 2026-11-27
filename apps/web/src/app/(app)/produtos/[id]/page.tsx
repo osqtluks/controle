@@ -13,8 +13,9 @@ import { SeloVencimento } from "@/modules/produtos/componentes/card";
 import { FormEntrada } from "@/modules/produtos/componentes/form-entrada";
 import { Historico } from "@/modules/produtos/componentes/historico";
 import { TabelaLotes } from "@/modules/produtos/componentes/tabela-lotes";
+import { EditarPrecos } from "@/modules/produtos/componentes/editar-precos";
 import { BotaoArquivar } from "@/modules/produtos/componentes/botao-arquivar";
-import { limitesDe } from "@/modules/produtos/tipos";
+import { limitesDe, tabelaDe } from "@/modules/produtos/tipos";
 
 export const metadata: Metadata = { title: "Produto" };
 
@@ -79,10 +80,15 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
                 <SeloVencimento data={p.proximo_vencimento} />
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Numero rotulo="Preço de venda" valor={`${formatBRL(p.preco_cents_por_grama)}/g`} />
-              <Numero rotulo="Custo médio" valor={custoG !== null ? `${formatBRL(custoG)}/g` : "—"} sub="do que está em estoque" />
-              <Numero rotulo="Margem" valor={margem !== null ? formatBps(margem) : "—"} />
+            <div className="mt-4">
+              <EditarPrecos id={p.id} tabela={tabelaDe(p)} custo={p.custo_ref_cents_por_grama} />
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <Numero
+                rotulo="Custo médio real do estoque"
+                valor={custoG !== null ? `${formatBRL(custoG)}/g` : "—"}
+                sub={margem !== null ? `margem real ${formatBps(margem)}` : "sem estoque"}
+              />
               <Numero
                 rotulo="Estoque vale"
                 valor={formatBRL(priceFor(p.estoque_dg, p.preco_cents_por_grama))}
@@ -109,7 +115,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <Secao titulo="Dar entrada no estoque">
-            <FormEntrada produtoId={p.id} fornecedores={fornecedores} />
+            <FormEntrada produtoId={p.id} fornecedores={fornecedores} custoRef={p.custo_ref_cents_por_grama} />
           </Secao>
         </aside>
       </div>

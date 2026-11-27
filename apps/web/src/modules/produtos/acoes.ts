@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { parseBRL, parseGrams, validateThresholds } from "@ct/core";
+import { custoPorGrama, parseBRL, parseGrams, validateThresholds } from "@ct/core";
 import { createClient } from "@/lib/supabase/server";
 
 export type EstadoForm = { erro?: string; ok?: boolean };
@@ -24,14 +24,49 @@ async function enviarFoto(foto: File, produtoId: string): Promise<string> {
   return path;
 }
 
+/** Lê os preços por grama: pago (opcional), 3 g+ (obrigatório), 10 g+ e 30 g+ (opcionais). */
+function lerPrecos(f: FormData) {
+  const opcional = (k: string, nome: string) => {
+    const t = String(f.get(k) ?? "").trim();
+    if (!t) return { v: null };
+    const c = parseBRL(t);
+    return c === null || c < 0 ? { erro: `${nome} inválido. Ex.: 12,50` } : { v: c };
+  };
+  const preco = parseBRL(String(f.get("preco") ?? ""));
+  if (preco === null || preco < 0) return { erro: "Preço de venda (3 g+) inválido. Ex.: 12,50" };
+  const custo = opcional("custo_ref", "Preço pago por grama");
+  const p10 = opcional("preco_10g", "Preço 10 g+");
+  const p30 = opcional("preco_30g", "Preço 30 g+");
+  for (const r of [custo, p10, p30]) if ("erro" in r) return { erro: r.erro! };
+  return {
+    preco_cents_por_grama: preco,
+    custo_ref_cents_por_grama: custo.v ?? null,
+    preco_10g_cents_por_grama: p10.v ?? null,
+    preco_30g_cents_por_grama: p30.v ?? null,
+  };
+}
+
+/** Ajuste rápido só dos preços, direto na tela do produto. */
+export async function atualizarPrecos(_: EstadoForm, f: FormData): Promise<EstadoForm> {
+  const id = texto(f, "id");
+  if (!id) return { erro: "Produto não informado." };
+  const precos = lerPrecos(f);
+  if ("erro" in precos) return precos;
+  const supabase = await createClient();
+  const { error } = await supabase.from("produtos").update(precos).eq("id", id);
+  if (error) return { erro: `Não foi possível salvar: ${error.message}` };
+  refresh();
+  return { ok: true };
+}
+
 /** Cria (sem `id`) ou edita (com `id`) um produto. */
 export async function salvarProduto(_: EstadoForm, f: FormData): Promise<EstadoForm> {
   const id = texto(f, "id");
   const nome = texto(f, "nome");
   if (!nome) return { erro: "Dê um nome ao produto." };
 
-  const preco = parseBRL(String(f.get("preco") ?? ""));
-  if (preco === null || preco < 0) return { erro: "Preço por grama inválido. Ex.: 12,50" };
+  const precos = lerPrecos(f);
+  if ("erro" in precos) return precos;
 
   const g = (k: string) => parseGrams(String(f.get(k) ?? ""));
   const lim = {
@@ -51,7 +86,7 @@ export async function salvarProduto(_: EstadoForm, f: FormData): Promise<EstadoF
     categoria: texto(f, "categoria"),
     descricao: texto(f, "descricao"),
     observacoes: texto(f, "observacoes"),
-    preco_cents_por_grama: preco,
+    ...precos,
     lim_acabou_dg: limites.acabou,
     lim_muito_baixo_dg: limites.muitoBaixo,
     lim_acabando_dg: limites.acabando,
@@ -117,6 +152,11 @@ export async function darEntrada(_: EstadoForm, f: FormData): Promise<EstadoForm
     observacoes: texto(f, "observacoes"),
   });
   if (error) return { erro: `Não foi possível registrar a entrada: ${error.message}` };
+
+  // O "pago por grama" do produto passa a ser o desta última compra.
+  const porGrama = custoPorGrama(custo, qtd);
+  if (porGrama !== null)
+    await supabase.from("produtos").update({ custo_ref_cents_por_grama: porGrama }).eq("id", produtoId);
 
   refresh();
   return { ok: true };

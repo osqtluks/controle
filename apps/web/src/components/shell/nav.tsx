@@ -53,7 +53,7 @@ export function SidebarView({ pathname }: { pathname: string }) {
 }
 
 /** Barra inferior (celular): os 5 mais usados. */
-const NO_CELULAR = ["", "vendas", "contas", "produtos", "calendario"];
+const NO_CELULAR = ["", "produtos", "menu", "pessoas", "vendas"];
 
 export function BottomNav() {
   return <BottomNavView pathname={usePathname()} />;

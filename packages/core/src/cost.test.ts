@@ -40,3 +40,20 @@ describe("ordenar", () => {
     expect(ordenar(xs, (x) => x.v, "asc").map((x) => x.n)).toEqual(["bia", "Caio", "Ana"]);
   });
 });
+
+import { faixaPara, precoPorGramaPara, precosEfetivos } from "./index";
+
+describe("faixas de preço", () => {
+  const t = { base: 1500, de10: 1300, de30: null };
+  it("escolhe a faixa pela quantidade", () => {
+    expect(faixaPara(35)).toBe("base");
+    expect(faixaPara(100)).toBe("de10");
+    expect(faixaPara(299)).toBe("de10");
+    expect(faixaPara(300)).toBe("de30");
+  });
+  it("faixa vazia herda a de baixo", () => {
+    expect(precosEfetivos(t)).toEqual({ base: 1500, de10: 1300, de30: 1300 });
+    expect(precoPorGramaPara(50, t)).toBe(1500);
+    expect(precoPorGramaPara(400, t)).toBe(1300);
+  });
+});

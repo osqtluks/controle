@@ -3,9 +3,11 @@
 import { useActionState, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import { dgToGrams, formatBRL, type StockThresholds } from "@ct/core";
-import { StockBar } from "@/components/stock-bar";
 import { Botao, Campo, Erro, Input, Textarea } from "@/components/ui/form";
+import { cn } from "@/lib/cn";
 import { comprimirImagem } from "@/lib/imagem";
+import { CamposPreco } from "./campos-preco";
+import { ReguaNiveis, errosDeNivel } from "./regua-niveis";
 import { salvarProduto, type EstadoForm } from "../acoes";
 import type { ProdutoCardDados } from "./card";
 
@@ -39,6 +41,7 @@ export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDado
     muitoBaixo: lerG(lim.muitoBaixo),
     acabou: lerG(lim.acabou),
   };
+  const errosLim = errosDeNivel(limDg);
 
   async function escolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -88,15 +91,19 @@ export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDado
               ))}
             </datalist>
           </Campo>
-          <Campo rotulo="Preço por grama (R$) *" dica="Ex.: 12,50">
-            <Input
-              name="preco"
-              required
-              inputMode="decimal"
-              defaultValue={produto ? (produto.preco_cents_por_grama / 100).toFixed(2).replace(".", ",") : ""}
-            />
-          </Campo>
         </div>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-line bg-card p-4">
+        <h2 className="font-medium">Preços por grama</h2>
+        <CamposPreco
+          iniciais={{
+            custo: produto?.custo_ref_cents_por_grama ?? null,
+            base: produto?.preco_cents_por_grama ?? null,
+            de10: produto?.preco_10g_cents_por_grama ?? null,
+            de30: produto?.preco_30g_cents_por_grama ?? null,
+          }}
+        />
       </section>
 
       <section className="space-y-3 rounded-xl border border-line bg-card p-4">
@@ -117,19 +124,23 @@ export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDado
                   required
                   value={lim[n.nome]}
                   onChange={(e) => setLim((l) => ({ ...l, [n.nome]: e.target.value }))}
-                  className="pl-7 pr-7"
+                  aria-invalid={Boolean(errosLim[n.nome])}
+                  className={cn("pl-7 pr-7", errosLim[n.nome] && "border-red-500 focus:border-red-500")}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-faint">g</span>
               </div>
             </Campo>
           ))}
         </div>
-        <div className="space-y-2 pt-1">
-          <p className="text-[11px] text-faint">Prévia de como a barra fica em cada nível:</p>
-          {(["cheio", "metade", "acabando", "muitoBaixo"] as const).map((k) => (
-            <StockBar key={k} qty={limDg[k]} limites={limDg} />
-          ))}
-        </div>
+        {Object.values(errosLim).length > 0 ? (
+          <ul className="space-y-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            {Object.values(errosLim).map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        ) : (
+          <ReguaNiveis limites={limDg} />
+        )}
       </section>
 
       <section className="grid gap-3 rounded-xl border border-line bg-card p-4">
@@ -143,7 +154,7 @@ export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDado
 
       <Erro>{estado.erro}</Erro>
       <div className="flex gap-2">
-        <Botao disabled={enviando || processando}>{enviando ? "Salvando…" : produto ? "Salvar alterações" : "Criar produto"}</Botao>
+        <Botao disabled={enviando || processando || Object.keys(errosLim).length > 0}>{enviando ? "Salvando…" : produto ? "Salvar alterações" : "Criar produto"}</Botao>
         {produto && (
           <span className="self-center text-xs text-faint">Preço atual: {formatBRL(produto.preco_cents_por_grama)}/g</span>
         )}

@@ -2,18 +2,29 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { custoPorGrama, formatBRL, parseBRL, parseGrams } from "@ct/core";
+import { custoPorGrama, formatBRL, parseBRL, parseGrams, priceFor } from "@ct/core";
+import { centsParaTexto } from "./campos-preco";
 import { Botao, Campo, Erro, Input, Select, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { hojeISO } from "@/lib/datas";
 import type { Pessoa } from "@/modules/pessoas/tipos";
 import { darEntrada, type EstadoForm } from "../acoes";
 
-export function FormEntrada({ produtoId, fornecedores }: { produtoId: string; fornecedores: Pessoa[] }) {
+export function FormEntrada({
+  produtoId,
+  fornecedores,
+  custoRef,
+}: {
+  produtoId: string;
+  fornecedores: Pessoa[];
+  custoRef: number | null;
+}) {
   const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(darEntrada, {});
   const [pagamento, setPagamento] = useState<"avista" | "prazo">("avista");
   const [qtd, setQtd] = useState("");
   const [custo, setCusto] = useState("");
+  // Preço por grama e total andam juntos: editar um recalcula o outro.
+  const [porG, setPorG] = useState(centsParaTexto(custoRef));
   const form = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -22,13 +33,30 @@ export function FormEntrada({ produtoId, fornecedores }: { produtoId: string; fo
       // eslint-disable-next-line react-hooks/set-state-in-effect -- limpar o formulário após salvar
       setQtd("");
       setCusto("");
+      setPorG(centsParaTexto(custoRef));
       setPagamento("avista");
     }
-  }, [estado]);
+  }, [estado, custoRef]);
 
   const dg = parseGrams(qtd);
-  const cents = parseBRL(custo);
-  const porGrama = dg && cents !== null ? custoPorGrama(cents, dg) : null;
+
+  function mudarQtd(v: string) {
+    setQtd(v);
+    const d = parseGrams(v);
+    const pg = parseBRL(porG);
+    if (d && pg !== null) setCusto(centsParaTexto(priceFor(d, pg)));
+  }
+  function mudarPorG(v: string) {
+    setPorG(v);
+    const pg = parseBRL(v);
+    if (dg && pg !== null) setCusto(centsParaTexto(priceFor(dg, pg)));
+  }
+  function mudarTotal(v: string) {
+    setCusto(v);
+    const t = parseBRL(v);
+    const pg = dg && t !== null ? custoPorGrama(t, dg) : null;
+    if (pg !== null) setPorG(centsParaTexto(pg));
+  }
 
   return (
     <form ref={form} action={acao} className="space-y-3">
@@ -54,11 +82,14 @@ export function FormEntrada({ produtoId, fornecedores }: { produtoId: string; fo
         <Campo rotulo="Data da compra">
           <Input name="data_compra" type="date" defaultValue={hojeISO()} />
         </Campo>
-        <Campo rotulo="Quantidade (g) *" dica="Ex.: 25 ou 3,5">
-          <Input name="quantidade" required inputMode="decimal" value={qtd} onChange={(e) => setQtd(e.target.value)} />
+        <Campo rotulo="Quantidade (g) *" dica="Ex.: 25 ou 3,5" className="sm:col-span-2">
+          <Input name="quantidade" required inputMode="decimal" value={qtd} onChange={(e) => mudarQtd(e.target.value)} />
         </Campo>
-        <Campo rotulo="Valor total pago (R$) *" dica={porGrama !== null ? `= ${formatBRL(porGrama)} por grama` : "Ex.: 350,00"}>
-          <Input name="custo_total" required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} />
+        <Campo rotulo="Paguei por grama (R$)" dica={custoRef !== null ? `Último: ${formatBRL(custoRef)}` : "Ex.: 9,80"}>
+          <Input inputMode="decimal" value={porG} onChange={(e) => mudarPorG(e.target.value)} />
+        </Campo>
+        <Campo rotulo="Total pago (R$) *" dica="Calcula sozinho; pode ajustar">
+          <Input name="custo_total" required inputMode="decimal" value={custo} onChange={(e) => mudarTotal(e.target.value)} />
         </Campo>
       </div>
 

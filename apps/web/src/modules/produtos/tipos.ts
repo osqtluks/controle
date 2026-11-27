@@ -1,4 +1,4 @@
-import type { StockThresholds } from "@ct/core";
+import type { StockThresholds, TabelaPreco } from "@ct/core";
 
 /** Linha da visão `produtos_estoque`. */
 export interface ProdutoEstoque {
@@ -8,6 +8,9 @@ export interface ProdutoEstoque {
   descricao: string | null;
   foto_path: string | null;
   preco_cents_por_grama: number;
+  custo_ref_cents_por_grama: number | null;
+  preco_10g_cents_por_grama: number | null;
+  preco_30g_cents_por_grama: number | null;
   lim_acabou_dg: number;
   lim_muito_baixo_dg: number;
   lim_acabando_dg: number;
@@ -57,4 +60,8 @@ export function limitesDe(p: ProdutoEstoque): StockThresholds {
     metade: p.lim_metade_dg,
     cheio: p.lim_cheio_dg,
   };
+}
+
+export function tabelaDe(p: Pick<ProdutoEstoque, "preco_cents_por_grama" | "preco_10g_cents_por_grama" | "preco_30g_cents_por_grama">): TabelaPreco {
+  return { base: p.preco_cents_por_grama, de10: p.preco_10g_cents_por_grama, de30: p.preco_30g_cents_por_grama };
 }
