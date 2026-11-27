@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ImageOff, Pencil } from "lucide-react";
-import { custoPorGrama, formatBRL, formatBps, formatGrams, margemBps, priceFor } from "@ct/core";
+import { formatGrams } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
 import { Cabecalho, Secao, linkBotaoSec } from "@/components/ui/pagina";
 import { formatData } from "@/lib/datas";
@@ -14,31 +14,25 @@ import { FormEntrada } from "@/modules/produtos/componentes/form-entrada";
 import { Historico } from "@/modules/produtos/componentes/historico";
 import { TabelaLotes } from "@/modules/produtos/componentes/tabela-lotes";
 import { FornecedorProduto } from "@/modules/produtos/componentes/fornecedor-produto";
+import { DesempenhoBloco } from "@/modules/vendas/componentes/desempenho-produto";
+import { desempenhoDosProdutos } from "@/modules/vendas/dados";
 import { EditarPrecos } from "@/modules/produtos/componentes/editar-precos";
 import { AcoesLixeira } from "@/modules/produtos/componentes/botoes-lixeira";
 import { limitesDe, tabelaDe } from "@/modules/produtos/tipos";
 
 export const metadata: Metadata = { title: "Produto" };
 
-function Numero({ rotulo, valor, sub }: { rotulo: string; valor: string; sub?: string }) {
-  return (
-    <div className="rounded-lg bg-bg/60 p-3">
-      <div className="text-[11px] text-faint">{rotulo}</div>
-      <div className="text-lg font-semibold tabular-nums">{valor}</div>
-      {sub && <div className="text-[11px] text-muted">{sub}</div>}
-    </div>
-  );
-}
-
 async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const p = await obterProduto(id);
   if (!p) notFound();
-  const [lotes, fornecedores] = await Promise.all([listarLotes(id), listarPessoas("fornecedores")]);
+  const [lotes, fornecedores, desemp] = await Promise.all([
+    listarLotes(id),
+    listarPessoas("fornecedores"),
+    desempenhoDosProdutos(),
+  ]);
   const eventos = await historicoDe([id, ...lotes.map((l) => l.id)]);
 
-  const custoG = custoPorGrama(p.custo_estoque_cents, p.estoque_dg);
-  const margem = custoG !== null ? margemBps(p.preco_cents_por_grama, custoG) : null;
   const lim = limitesDe(p);
 
   return (
@@ -91,17 +85,8 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
             <div className="mt-4">
               <EditarPrecos id={p.id} tabela={tabelaDe(p)} custo={p.custo_ref_cents_por_grama} />
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <Numero
-                rotulo="Custo médio real do estoque"
-                valor={custoG !== null ? `${formatBRL(custoG)}/g` : "—"}
-                sub={margem !== null ? `margem real ${formatBps(margem)}` : "sem estoque"}
-              />
-              <Numero
-                rotulo="Estoque vale"
-                valor={formatBRL(priceFor(p.estoque_dg, p.preco_cents_por_grama))}
-                sub={`custou ${formatBRL(p.custo_estoque_cents)}`}
-              />
+            <div className="mt-2">
+              <DesempenhoBloco d={desemp.get(p.id)} estoqueDg={p.estoque_dg} tabela={tabelaDe(p)} />
             </div>
             {(p.descricao || p.observacoes) && (
               <div className="mt-4 space-y-2 text-sm">

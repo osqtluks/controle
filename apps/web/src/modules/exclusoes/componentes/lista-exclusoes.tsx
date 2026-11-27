@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { formatGrams } from "@ct/core";
+import { formatBRL, formatGrams } from "@ct/core";
 import { ThOrdem, useOrdenacao, type OpcaoOrdem } from "@/components/ui/ordenacao";
 import { cn } from "@/lib/cn";
 import { formatDataHora } from "@/lib/datas";
@@ -87,23 +87,26 @@ export function ListaExclusoes({ exclusoes }: { exclusoes: Exclusao[] }) {
             {ord.ordenados.map((e) => {
               const [selo, cor] = SELO[e.sit];
               const detalhe =
-                e.tipo === "definitiva"
-                  ? `com ${e.resumo.entradas ?? 0} entrada(s), ${formatGrams(e.resumo.estoque_dg ?? 0)} em estoque`
-                  : "mandado para a Lixeira";
+                e.tipo === "cancelada"
+                  ? `Venda · ${formatBRL(e.resumo.total_cents ?? 0)} · gramas devolvidas ao estoque`
+                  : e.tipo === "definitiva"
+                    ? `Produto · com ${e.resumo.entradas ?? 0} entrada(s), ${formatGrams(e.resumo.estoque_dg ?? 0)} em estoque`
+                    : "Produto · mandado para a Lixeira";
+              const href = e.entidade === "venda" ? `/vendas/${e.registro_id}` : `/produtos/${e.registro_id}`;
               return (
                 <tr key={e.id} className="border-b border-line/60 last:border-0">
                   <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-muted">{formatDataHora(e.em)}</td>
                   <td className="px-3 py-2.5">
-                    {e.sit === "restaurado" ? (
-                      <Link href={`/produtos/${e.registro_id}`} className="font-medium hover:underline">
+                    {e.sit === "restaurado" || e.entidade === "venda" ? (
+                      <Link href={href} className="font-medium hover:underline">
                         {e.nome}
                       </Link>
                     ) : (
                       <span className="font-medium">{e.nome}</span>
                     )}
-                    <div className="text-[11px] text-muted">Produto · {detalhe}</div>
+                    <div className="text-[11px] text-muted">{detalhe}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs">{e.tipo === "definitiva" ? "Excluído de vez" : "Lixeira"}</td>
+                  <td className="px-3 py-2.5 text-xs">{e.tipo === "definitiva" ? "Excluído de vez" : e.tipo === "cancelada" ? "Venda cancelada" : "Lixeira"}</td>
                   <td className="px-3 py-2.5">
                     <span className={cn("rounded-full px-2 py-0.5 text-[11px]", cor)}>{selo}</span>
                     {e.sit === "restaurado" && e.restaurado_em && (

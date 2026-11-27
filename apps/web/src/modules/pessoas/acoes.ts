@@ -23,16 +23,17 @@ export async function criarPessoa(_: EstadoPessoa, f: FormData): Promise<EstadoP
   return { ok: true };
 }
 
-/** Cadastro rápido de fornecedor (só o nome), usado nos seletores. */
-export async function criarFornecedorRapido(
+/** Cadastro rápido de pessoa (só o nome), usado nos seletores. */
+export async function criarPessoaRapida(
   nome: string,
+  tipo: "cliente" | "fornecedor" = "fornecedor",
 ): Promise<{ id: string; nome: string } | { erro: string }> {
   const n = nome.trim();
   if (!n) return { erro: "Informe o nome." };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pessoas")
-    .insert({ nome: n, tipo: "fornecedor" })
+    .insert({ nome: n, tipo })
     .select("id, nome")
     .single();
   if (error) return { erro: `Não foi possível cadastrar: ${error.message}` };

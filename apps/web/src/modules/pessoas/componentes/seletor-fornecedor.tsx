@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { criarFornecedorRapido } from "../acoes";
+import { criarPessoaRapida } from "../acoes";
 
 export interface OpcaoFornecedor {
   id: string;
@@ -23,6 +23,7 @@ export function SeletorFornecedor({
   name,
   compacto,
   desabilitado,
+  tipoNovo = "fornecedor",
 }: {
   fornecedores: OpcaoFornecedor[];
   valor: string | null;
@@ -30,6 +31,8 @@ export function SeletorFornecedor({
   name?: string;
   compacto?: boolean;
   desabilitado?: boolean;
+  /** Que tipo de pessoa o "+ Novo…" cadastra. */
+  tipoNovo?: "cliente" | "fornecedor";
 }) {
   const [lista, setLista] = useState(fornecedores);
   const [atual, setAtual] = useState(valor ?? "");
@@ -58,7 +61,7 @@ export function SeletorFornecedor({
   function criar() {
     setErro(null);
     iniciar(async () => {
-      const r = await criarFornecedorRapido(nome);
+      const r = await criarPessoaRapida(nome, tipoNovo);
       if ("erro" in r) return setErro(r.erro);
       setLista((l) => [...l, r].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")));
       setAtual(r.id);
@@ -89,7 +92,7 @@ export function SeletorFornecedor({
               }
               if (e.key === "Escape") setCriando(false);
             }}
-            placeholder="Nome do fornecedor"
+            placeholder={tipoNovo === "cliente" ? "Nome do cliente" : "Nome do fornecedor"}
             className={campo}
           />
           <button
@@ -106,19 +109,19 @@ export function SeletorFornecedor({
         </div>
       ) : (
         <select
-          aria-label="Fornecedor"
+          aria-label={tipoNovo === "cliente" ? "Cliente" : "Fornecedor"}
           value={atual}
           disabled={desabilitado || pendente}
           onChange={(e) => escolher(e.target.value)}
           className={campo}
         >
-          <option value="">— sem fornecedor —</option>
+          <option value="">{tipoNovo === "cliente" ? "— sem cliente —" : "— sem fornecedor —"}</option>
           {lista.map((f) => (
             <option key={f.id} value={f.id}>
               {f.nome}
             </option>
           ))}
-          <option value={NOVO}>+ Novo fornecedor…</option>
+          <option value={NOVO}>{tipoNovo === "cliente" ? "+ Novo cliente…" : "+ Novo fornecedor…"}</option>
         </select>
       )}
       {erro && <p className="text-[11px] text-red-400">{erro}</p>}

@@ -16,6 +16,8 @@ const ORDEM: OpcaoOrdem<ProdutoCardDados>[] = [
   { id: "preco", rotulo: "Vendo por grama", valor: (p) => p.preco_cents_por_grama, padrao: "desc" },
   { id: "custo", rotulo: "Pago por grama", valor: (p) => p.custo_ref_cents_por_grama ?? custoPorGrama(p.custo_estoque_cents, p.estoque_dg), padrao: "desc" },
   { id: "lucro", rotulo: "Lucro por grama", valor: (p) => { const c = p.custo_ref_cents_por_grama ?? custoPorGrama(p.custo_estoque_cents, p.estoque_dg); return c === null ? null : p.preco_cents_por_grama - c; }, padrao: "desc" },
+  { id: "faturado", rotulo: "Mais faturado", valor: (p) => p.faturado_cents ?? 0, padrao: "desc" },
+  { id: "lucroReal", rotulo: "Mais lucro real", valor: (p) => p.lucro_real_cents ?? 0, padrao: "desc" },
   { id: "valor", rotulo: "Valor em estoque", valor: (p) => priceFor(p.estoque_dg, p.preco_cents_por_grama), padrao: "desc" },
   { id: "vencimento", rotulo: "Próximo pagamento", valor: (p) => p.proximo_vencimento },
   { id: "entrada", rotulo: "Última entrada", valor: (p) => p.ultima_entrada, padrao: "desc" },

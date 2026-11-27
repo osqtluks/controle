@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { CalendarClock, ImageOff } from "lucide-react";
-import { custoPorGrama, formatBRL, formatBps, formatLucro, margemBps, priceFor } from "@ct/core";
+import { custoPorGrama, formatBRL, formatBps, formatLucro, margemBps } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
 import { diasAte, formatData } from "@/lib/datas";
 import { cn } from "@/lib/cn";
 import { limitesDe, type ProdutoEstoque } from "../tipos";
 import { AcoesLixeira, BotaoLixeiraCard } from "./botoes-lixeira";
 
-export type ProdutoCardDados = ProdutoEstoque & { foto_url: string | null };
+export type ProdutoCardDados = ProdutoEstoque & {
+  foto_url: string | null;
+  /** Vendas reais (quando a página carrega o desempenho). */
+  faturado_cents?: number;
+  lucro_real_cents?: number;
+};
 
 /** Selo do próximo pagamento a prazo: vermelho (vencido/hoje), laranja (até 3 dias), neutro. */
 export function SeloVencimento({ data }: { data: string | null }) {
@@ -26,7 +31,6 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
   // "Pago/g" é o de referência do produto; sem ele, o custo médio do estoque.
   const custoG = p.custo_ref_cents_por_grama ?? custoPorGrama(p.custo_estoque_cents, p.estoque_dg);
   const margem = custoG !== null ? margemBps(p.preco_cents_por_grama, custoG) : null;
-  const valorVenda = priceFor(p.estoque_dg, p.preco_cents_por_grama);
 
   return (
     <Link
@@ -85,8 +89,15 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
           </dd>
         </div>
         <div className="px-2 py-2">
-          <dt className="text-faint">Vale em venda</dt>
-          <dd className="tabular-nums text-muted">{formatBRL(valorVenda)}</dd>
+          <dt className="text-faint">Faturado</dt>
+          <dd className="tabular-nums text-muted">
+            {formatBRL(p.faturado_cents ?? 0)}
+            {p.lucro_real_cents ? (
+              <span className={cn("block text-[10px]", p.lucro_real_cents < 0 ? "text-red-400" : "text-emerald-400")}>
+                {formatLucro(p.lucro_real_cents)} lucro
+              </span>
+            ) : null}
+          </dd>
         </div>
       </dl>
     </Link>

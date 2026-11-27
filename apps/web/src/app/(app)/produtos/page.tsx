@@ -4,12 +4,17 @@ import { Suspense } from "react";
 import { Plus } from "lucide-react";
 import { Cabecalho, Carregando, linkBotao } from "@/components/ui/pagina";
 import { listarProdutos } from "@/modules/produtos/dados";
+import { desempenhoDosProdutos } from "@/modules/vendas/dados";
 import { ListaProdutos } from "@/modules/produtos/componentes/lista";
 
 export const metadata: Metadata = { title: "Produtos" };
 
 async function Lista() {
-  const produtos = await listarProdutos(true); // inclui a Lixeira; a lista separa
+  const [lista, desemp] = await Promise.all([listarProdutos(true), desempenhoDosProdutos()]); // inclui a Lixeira
+  const produtos = lista.map((p) => {
+    const d = desemp.get(p.id);
+    return { ...p, faturado_cents: d?.faturado_cents ?? 0, lucro_real_cents: d ? d.faturado_cents - d.custo_vendido_cents : 0 };
+  });
   if (!produtos.length)
     return (
       <div className="rounded-xl border border-dashed border-line p-10 text-center">

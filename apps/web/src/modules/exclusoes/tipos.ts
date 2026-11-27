@@ -1,10 +1,10 @@
 export interface Exclusao {
   id: string;
-  tipo: "lixeira" | "definitiva";
-  entidade: "produto";
+  tipo: "lixeira" | "definitiva" | "cancelada";
+  entidade: "produto" | "venda";
   registro_id: string;
   nome: string;
-  resumo: { entradas?: number; estoque_dg?: number };
+  resumo: { entradas?: number; estoque_dg?: number; total_cents?: number };
   em: string;
   restaurado_em: string | null;
 }

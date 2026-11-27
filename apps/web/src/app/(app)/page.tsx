@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { NIVEIS_DE_ALERTA, stockLevel, stockPercent } from "@ct/core";
+import { formatBRL, formatLucro, NIVEIS_DE_ALERTA, stockLevel, stockPercent } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
 import { MODULOS, href } from "@/modules/registry";
 import { listarProdutos } from "@/modules/produtos/dados";
 import { SeloVencimento } from "@/modules/produtos/componentes/card";
 import { limitesDe } from "@/modules/produtos/tipos";
-import { diasAte } from "@/lib/datas";
+import { diasAte, FUSO, hojeISO } from "@/lib/datas";
+import { totaisDesde } from "@/modules/vendas/dados";
+import { Plus } from "lucide-react";
 
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -64,6 +66,34 @@ async function Alertas() {
   );
 }
 
+async function ResumoVendas() {
+  const hoje = hojeISO();
+  const vendas = await totaisDesde(`${hoje.slice(0, 7)}-01T00:00:00-03:00`);
+  const doDia = vendas.filter((v) => new Date(v.data).toLocaleDateString("en-CA", { timeZone: FUSO }) === hoje);
+  const soma = (xs: typeof vendas) => ({
+    fat: xs.reduce((s, v) => s + v.total_cents, 0),
+    luc: xs.reduce((s, v) => s + v.total_cents - v.custo_cents, 0),
+    n: xs.length,
+  });
+  const blocos = [
+    ["Hoje", soma(doDia)],
+    ["Este mês", soma(vendas)],
+  ] as const;
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {blocos.map(([rotulo, b]) => (
+        <Link key={rotulo} href="/vendas" className="rounded-xl border border-line bg-card p-4 hover:bg-hover">
+          <div className="text-xs text-muted">
+            {rotulo} · {b.n} venda(s)
+          </div>
+          <div className="text-xl font-semibold tabular-nums">{formatBRL(b.fat)}</div>
+          <div className={b.luc < 0 ? "text-xs text-red-400" : "text-xs text-emerald-400"}>{formatLucro(b.luc)} de lucro</div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function Painel() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -71,6 +101,16 @@ export default function Painel() {
         <h1 className="text-2xl font-semibold tracking-tight">Painel</h1>
         <p className="text-sm text-muted">O que precisa da sua atenção agora.</p>
       </header>
+
+      <div className="flex justify-end">
+        <Link href="/vendas/nova" className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-black hover:opacity-90">
+          <Plus size={16} /> Nova venda
+        </Link>
+      </div>
+
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-xl border border-line bg-card" />}>
+        <ResumoVendas />
+      </Suspense>
 
       <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-line bg-card" />}>
         <Alertas />
