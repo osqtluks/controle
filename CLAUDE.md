@@ -16,6 +16,8 @@ Sistema pessoal (1 usuário) de vendas, estoque, contas a pagar/receber, calend�
 - Lançamentos financeiros e histórico de dívidas são **só de acrescentar**: corrigir = novo registro (estorno/evento), nunca UPDATE/DELETE do passado.
 - Vencimento original de parcela é imutável; postergar cria evento e muda só o vencimento atual.
 - Módulos não importam telas uns dos outros. Integração entre módulos por eventos/tabelas, regras compartilhadas via `@ct/core`.
+- Datas/horas sempre em America/Sao_Paulo via `@/lib/datas` (servidor roda em UTC).
+- Histórico de alterações: tabela `historico` (trigger); textos "Você mudou X de A para B" em `modules/produtos/componentes/historico.tsx`.
 - Toda tabela com ordenação completa (valor, atraso, data, nome) — requisito do usuário.
 
 ## Banco (Supabase)

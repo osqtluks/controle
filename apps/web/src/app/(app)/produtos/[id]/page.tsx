@@ -13,6 +13,7 @@ import { SeloVencimento } from "@/modules/produtos/componentes/card";
 import { FormEntrada } from "@/modules/produtos/componentes/form-entrada";
 import { Historico } from "@/modules/produtos/componentes/historico";
 import { TabelaLotes } from "@/modules/produtos/componentes/tabela-lotes";
+import { FornecedorProduto } from "@/modules/produtos/componentes/fornecedor-produto";
 import { EditarPrecos } from "@/modules/produtos/componentes/editar-precos";
 import { BotaoArquivar } from "@/modules/produtos/componentes/botao-arquivar";
 import { limitesDe, tabelaDe } from "@/modules/produtos/tipos";
@@ -56,8 +57,8 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-4">
           <section className="rounded-xl border border-line bg-card p-4">
             <div className="flex gap-4">
               <div className="size-24 shrink-0 overflow-hidden rounded-xl bg-hover sm:size-32">
@@ -77,6 +78,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
                   <span>Fim {formatGrams(lim.acabando)}</span>·<span>Muito baixo {formatGrams(lim.muitoBaixo)}</span>·
                   <span>Acabou {formatGrams(lim.acabou)}</span>
                 </div>
+                <FornecedorProduto produtoId={p.id} valor={p.fornecedor_id} fornecedores={fornecedores} />
                 <SeloVencimento data={p.proximo_vencimento} />
               </div>
             </div>
@@ -102,20 +104,21 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
               </div>
             )}
             <p className="mt-3 text-[11px] text-faint">Última entrada: {formatData(p.ultima_entrada)}</p>
+
+            <div className="mt-4 border-t border-line pt-3">
+              <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">Histórico de alterações</h3>
+              <Historico eventos={eventos} nomes={Object.fromEntries(fornecedores.map((f) => [f.id, f.nome]))} />
+            </div>
           </section>
 
           <Secao titulo={`Entradas (${lotes.length})`}>
-            <TabelaLotes lotes={lotes} />
-          </Secao>
-
-          <Secao titulo="Histórico de alterações">
-            <Historico eventos={eventos} />
+            <TabelaLotes lotes={lotes} fornecedores={fornecedores} />
           </Secao>
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <Secao titulo="Dar entrada no estoque">
-            <FormEntrada produtoId={p.id} fornecedores={fornecedores} custoRef={p.custo_ref_cents_por_grama} />
+            <FormEntrada produtoId={p.id} fornecedores={fornecedores} custoRef={p.custo_ref_cents_por_grama} fornecedorPadrao={p.fornecedor_id} />
           </Secao>
         </aside>
       </div>

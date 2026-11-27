@@ -5,6 +5,8 @@ import { ThOrdem, useOrdenacao, type OpcaoOrdem } from "@/components/ui/ordenaca
 import { formatData } from "@/lib/datas";
 import type { LoteSaldo } from "../tipos";
 import { SeloVencimento } from "./card";
+import { FornecedorLote } from "./fornecedor-produto";
+import type { OpcaoFornecedor } from "@/modules/pessoas/componentes/seletor-fornecedor";
 
 const ORDEM: OpcaoOrdem<LoteSaldo>[] = [
   { id: "data", rotulo: "Data", valor: (l) => l.data_compra, padrao: "desc" },
@@ -16,7 +18,7 @@ const ORDEM: OpcaoOrdem<LoteSaldo>[] = [
   { id: "pagamento", rotulo: "Pagamento", valor: (l) => l.vencimento ?? "" },
 ];
 
-export function TabelaLotes({ lotes }: { lotes: LoteSaldo[] }) {
+export function TabelaLotes({ lotes, fornecedores }: { lotes: LoteSaldo[]; fornecedores: OpcaoFornecedor[] }) {
   const ord = useOrdenacao(lotes, ORDEM, "data");
   if (!lotes.length) return <p className="py-6 text-center text-sm text-muted">Nenhuma entrada ainda.</p>;
 
@@ -36,7 +38,9 @@ export function TabelaLotes({ lotes }: { lotes: LoteSaldo[] }) {
             return (
               <tr key={l.id} className="border-b border-line/60 last:border-0">
                 <td className="px-2 py-2 tabular-nums">{formatData(l.data_compra)}</td>
-                <td className="px-2 py-2">{l.fornecedor?.nome ?? <span className="text-faint">—</span>}</td>
+                <td className="px-2 py-1.5">
+                  <FornecedorLote loteId={l.id} valor={l.fornecedor_id} fornecedores={fornecedores} />
+                </td>
                 <td className="px-2 py-2 tabular-nums">{formatGrams(l.quantidade_dg)}</td>
                 <td className="px-2 py-2 tabular-nums">
                   {l.restante_dg > 0 ? formatGrams(l.restante_dg) : <span className="text-faint">esgotado</span>}

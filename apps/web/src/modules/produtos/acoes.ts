@@ -87,6 +87,7 @@ export async function salvarProduto(_: EstadoForm, f: FormData): Promise<EstadoF
     descricao: texto(f, "descricao"),
     observacoes: texto(f, "observacoes"),
     ...precos,
+    fornecedor_id: texto(f, "fornecedor_id"),
     lim_acabou_dg: limites.acabou,
     lim_muito_baixo_dg: limites.muitoBaixo,
     lim_acabando_dg: limites.acabando,
@@ -160,4 +161,20 @@ export async function darEntrada(_: EstadoForm, f: FormData): Promise<EstadoForm
 
   refresh();
   return { ok: true };
+}
+
+/** Troca o fornecedor principal do produto (não mexe no estoque). */
+export async function definirFornecedorProduto(produtoId: string, fornecedorId: string | null) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("produtos").update({ fornecedor_id: fornecedorId }).eq("id", produtoId);
+  if (error) throw new Error(`Não foi possível trocar o fornecedor: ${error.message}`);
+  refresh();
+}
+
+/** Corrige o fornecedor de uma entrada já feita (quantidade e valor continuam travados). */
+export async function definirFornecedorLote(loteId: string, fornecedorId: string | null) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("lotes").update({ fornecedor_id: fornecedorId }).eq("id", loteId);
+  if (error) throw new Error(`Não foi possível trocar o fornecedor: ${error.message}`);
+  refresh();
 }

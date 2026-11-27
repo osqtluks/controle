@@ -3,18 +3,23 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Cabecalho } from "@/components/ui/pagina";
 import { listarCategorias, obterProduto } from "@/modules/produtos/dados";
+import { listarPessoas } from "@/modules/pessoas/dados";
 import { FormProduto } from "@/modules/produtos/componentes/form-produto";
 
 export const metadata: Metadata = { title: "Editar produto" };
 
 async function Form({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [produto, categorias] = await Promise.all([obterProduto(id), listarCategorias()]);
+  const [produto, categorias, fornecedores] = await Promise.all([
+    obterProduto(id),
+    listarCategorias(),
+    listarPessoas("fornecedores"),
+  ]);
   if (!produto) notFound();
   return (
     <>
       <Cabecalho titulo={`Editar ${produto.nome}`} voltar={`/produtos/${id}`} />
-      <FormProduto produto={produto} categorias={categorias} />
+      <FormProduto produto={produto} categorias={categorias} fornecedores={fornecedores} />
     </>
   );
 }

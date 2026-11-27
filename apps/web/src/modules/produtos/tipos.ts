@@ -9,6 +9,7 @@ export interface ProdutoEstoque {
   foto_path: string | null;
   preco_cents_por_grama: number;
   custo_ref_cents_por_grama: number | null;
+  fornecedor_id: string | null;
   preco_10g_cents_por_grama: number | null;
   preco_30g_cents_por_grama: number | null;
   lim_acabou_dg: number;

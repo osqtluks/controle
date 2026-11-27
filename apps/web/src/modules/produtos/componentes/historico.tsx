@@ -2,59 +2,113 @@ import { formatBRL, formatGrams } from "@ct/core";
 import { formatData, formatDataHora } from "@/lib/datas";
 import type { EventoHistorico } from "../tipos";
 
-const ROTULO: Record<string, [string, (v: unknown) => string]> = {
-  nome: ["Nome", String],
-  categoria: ["Categoria", (v) => (v ? String(v) : "—")],
-  descricao: ["Descrição", (v) => (v ? String(v) : "—")],
-  observacoes: ["Observações", (v) => (v ? String(v) : "—")],
-  preco_10g_cents_por_grama: ["Vendo 10 g+", (v) => (v === null || v === undefined ? "—" : formatBRL(Number(v)))],
-  preco_30g_cents_por_grama: ["Vendo 30 g+", (v) => (v === null || v === undefined ? "—" : formatBRL(Number(v)))],
-  preco_cents_por_grama: ["Vendo 3 g+", (v) => formatBRL(Number(v))],
-  custo_ref_cents_por_grama: ["Pago por grama", (v) => (v === null || v === undefined ? "—" : formatBRL(Number(v)))],
-  lim_cheio_dg: ["Nível cheio", (v) => formatGrams(Number(v))],
-  lim_metade_dg: ["Nível metade", (v) => formatGrams(Number(v))],
-  lim_acabando_dg: ["Nível chegando ao fim", (v) => formatGrams(Number(v))],
-  lim_muito_baixo_dg: ["Nível muito baixo", (v) => formatGrams(Number(v))],
-  lim_acabou_dg: ["Nível acabou", (v) => formatGrams(Number(v))],
-  foto_path: ["Foto", (v) => (v ? "nova foto" : "sem foto")],
-  arquivado: ["Arquivado", (v) => (v ? "sim" : "não")],
-};
+type Nomes = Record<string, string>;
+type Fmt = (v: unknown, nomes: Nomes) => string;
 
-function descrever(e: EventoHistorico): string[] {
-  if (e.tabela === "lotes" && e.depois) {
-    const d = e.depois;
-    const prazo = d.pagamento === "prazo" ? `a prazo, vence ${formatData(String(d.vencimento))}` : "à vista";
-    return [
-      `Entrada de ${formatGrams(Number(d.quantidade_dg))} por ${formatBRL(Number(d.custo_total_cents))} (${prazo})`,
-    ];
-  }
-  if (e.acao === "criou") return ["Produto cadastrado"];
-  if (e.acao === "apagou") return ["Produto apagado"];
-  const a = e.antes ?? {};
-  const d = e.depois ?? {};
-  return Object.keys(ROTULO)
-    .filter((k) => JSON.stringify(a[k]) !== JSON.stringify(d[k]))
-    .map((k) => {
-      const [rot, fmt] = ROTULO[k]!;
-      return `${rot}: ${fmt(a[k])} → ${fmt(d[k])}`;
-    });
+const vazio = (v: unknown) => v === null || v === undefined || v === "";
+const dinheiro: Fmt = (v) => (vazio(v) ? "vazio" : formatBRL(Number(v)));
+const gramas: Fmt = (v) => formatGrams(Number(v));
+const textoFmt: Fmt = (v) => (vazio(v) ? "vazio" : `"${String(v)}"`);
+const pessoa: Fmt = (v, n) => (vazio(v) ? "nenhum" : (n[String(v)] ?? "outro fornecedor"));
+
+/** Campos do produto que aparecem no histórico, com nome amigável e formato. */
+const CAMPOS_PRODUTO: [string, string, Fmt][] = [
+  ["nome", "o nome", textoFmt],
+  ["categoria", "a categoria", textoFmt],
+  ["fornecedor_id", "o fornecedor", pessoa],
+  ["custo_ref_cents_por_grama", "o valor pago por grama", dinheiro],
+  ["preco_cents_por_grama", "o valor de 3 g+", dinheiro],
+  ["preco_10g_cents_por_grama", "o valor de 10 g+", dinheiro],
+  ["preco_30g_cents_por_grama", "o valor de 30 g+", dinheiro],
+  ["lim_cheio_dg", "o nível cheio", gramas],
+  ["lim_metade_dg", "o nível metade", gramas],
+  ["lim_acabando_dg", "o nível chegando ao fim", gramas],
+  ["lim_muito_baixo_dg", "o nível muito baixo", gramas],
+  ["lim_acabou_dg", "o nível acabou", gramas],
+  ["descricao", "a descrição", textoFmt],
+  ["observacoes", "as observações", textoFmt],
+];
+
+const CAMPOS_LOTE: [string, string, Fmt][] = [
+  ["fornecedor_id", "o fornecedor", pessoa],
+  ["observacoes", "as observações", textoFmt],
+];
+
+interface Linha {
+  chave: string;
+  em: string;
+  texto: string;
+  de?: string;
+  para?: string;
 }
 
-export function Historico({ eventos }: { eventos: EventoHistorico[] }) {
-  if (!eventos.length) return <p className="text-sm text-muted">Sem alterações registradas.</p>;
+const igual = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+function linhas(e: EventoHistorico, nomes: Nomes): Linha[] {
+  const a = e.antes ?? {};
+  const d = e.depois ?? {};
+  const base = { em: e.em };
+
+  if (e.tabela === "lotes") {
+    if (e.acao === "criou") {
+      const prazo = d.pagamento === "prazo" ? `a prazo, vence ${formatData(String(d.vencimento))}` : "à vista";
+      const forn = d.fornecedor_id ? ` de ${pessoa(d.fornecedor_id, nomes)}` : "";
+      return [
+        {
+          ...base,
+          chave: `${e.id}`,
+          texto: `Você deu entrada de ${formatGrams(Number(d.quantidade_dg))}${forn} por ${formatBRL(Number(d.custo_total_cents))} (${prazo})`,
+        },
+      ];
+    }
+    const qual = `da entrada de ${formatData(String(d.data_compra))} (${formatGrams(Number(d.quantidade_dg))})`;
+    return CAMPOS_LOTE.filter(([k]) => !igual(a[k], d[k])).map(([k, rot, fmt]) => ({
+      ...base,
+      chave: `${e.id}-${k}`,
+      texto: `Você mudou ${rot} ${qual}`,
+      de: fmt(a[k], nomes),
+      para: fmt(d[k], nomes),
+    }));
+  }
+
+  if (e.acao === "criou") return [{ ...base, chave: `${e.id}`, texto: "Você cadastrou o produto" }];
+  if (e.acao === "apagou") return [{ ...base, chave: `${e.id}`, texto: "Você apagou o produto" }];
+
+  const out: Linha[] = CAMPOS_PRODUTO.filter(([k]) => !igual(a[k], d[k])).map(([k, rot, fmt]) => ({
+    ...base,
+    chave: `${e.id}-${k}`,
+    texto: `Você mudou ${rot}`,
+    de: fmt(a[k], nomes),
+    para: fmt(d[k], nomes),
+  }));
+  if (!igual(a.foto_path, d.foto_path)) out.push({ ...base, chave: `${e.id}-foto`, texto: "Você trocou a foto" });
+  if (!igual(a.arquivado, d.arquivado))
+    out.push({ ...base, chave: `${e.id}-arq`, texto: d.arquivado ? "Você arquivou o produto" : "Você reativou o produto" });
+  return out;
+}
+
+/** Uma linha por alteração: "Você mudou o valor de 3 g+ de R$ 90,00 para R$ 100,00", com data e hora. */
+export function Historico({ eventos, nomes }: { eventos: EventoHistorico[]; nomes: Nomes }) {
+  const todas = eventos.flatMap((e) => linhas(e, nomes));
+  if (!todas.length) return <p className="text-sm text-muted">Nenhuma alteração ainda.</p>;
   return (
-    <ol className="relative space-y-3 border-l border-line pl-4">
-      {eventos.map((e) => (
-        <li key={e.id} className="relative">
-          <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-bg bg-accent" />
-          <time className="text-[11px] text-faint">{formatDataHora(e.em)}</time>
-          {descrever(e).map((t, i) => (
-            <p key={i} className="text-sm">
-              {t}
-            </p>
-          ))}
+    <ul className="max-h-72 divide-y divide-line/60 overflow-y-auto pr-1">
+      {todas.map((l) => (
+        <li key={l.chave} className="flex flex-col gap-0.5 py-2 text-sm sm:flex-row sm:gap-3">
+          <time className="shrink-0 text-[11px] tabular-nums text-faint sm:w-28 sm:pt-0.5">{formatDataHora(l.em)}</time>
+          <span>
+            {l.texto}
+            {l.de !== undefined && (
+              <>
+                {" de "}
+                <span className="text-muted line-through decoration-red-400/60">{l.de}</span>
+                {" para "}
+                <span className="font-medium text-accent">{l.para}</span>
+              </>
+            )}
+          </span>
         </li>
       ))}
-    </ol>
+    </ul>
   );
 }

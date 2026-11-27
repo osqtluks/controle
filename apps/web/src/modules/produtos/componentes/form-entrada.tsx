@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { custoPorGrama, formatBRL, parseBRL, parseGrams, priceFor } from "@ct/core";
 import { centsParaTexto } from "./campos-preco";
-import { Botao, Campo, Erro, Input, Select, Textarea } from "@/components/ui/form";
+import { Botao, Campo, Erro, Input, Textarea } from "@/components/ui/form";
+import { SeletorFornecedor } from "@/modules/pessoas/componentes/seletor-fornecedor";
 import { cn } from "@/lib/cn";
 import { hojeISO } from "@/lib/datas";
 import type { Pessoa } from "@/modules/pessoas/tipos";
@@ -14,10 +14,12 @@ export function FormEntrada({
   produtoId,
   fornecedores,
   custoRef,
+  fornecedorPadrao,
 }: {
   produtoId: string;
   fornecedores: Pessoa[];
   custoRef: number | null;
+  fornecedorPadrao: string | null;
 }) {
   const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(darEntrada, {});
   const [pagamento, setPagamento] = useState<"avista" | "prazo">("avista");
@@ -65,19 +67,7 @@ export function FormEntrada({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Campo rotulo="Veio de (fornecedor)">
-          <Select name="fornecedor_id" defaultValue="">
-            <option value="">— sem fornecedor —</option>
-            {fornecedores.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nome}
-              </option>
-            ))}
-          </Select>
-          {fornecedores.length === 0 && (
-            <Link href="/pessoas" className="text-[11px] text-accent">
-              Cadastrar fornecedor
-            </Link>
-          )}
+          <SeletorFornecedor key={estado.ok ? "ok" : "x"} name="fornecedor_id" fornecedores={fornecedores} valor={fornecedorPadrao} />
         </Campo>
         <Campo rotulo="Data da compra">
           <Input name="data_compra" type="date" defaultValue={hojeISO()} />

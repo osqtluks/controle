@@ -7,6 +7,7 @@ import { Botao, Campo, Erro, Input, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { comprimirImagem } from "@/lib/imagem";
 import { CamposPreco } from "./campos-preco";
+import { SeletorFornecedor, type OpcaoFornecedor } from "@/modules/pessoas/componentes/seletor-fornecedor";
 import { ReguaNiveis, errosDeNivel } from "./regua-niveis";
 import { salvarProduto, type EstadoForm } from "../acoes";
 import type { ProdutoCardDados } from "./card";
@@ -22,7 +23,15 @@ const NIVEIS: { nome: keyof StockThresholds; campo: string; rotulo: string; cor:
 const g = (dg: number) => String(dgToGrams(dg)).replace(".", ",");
 const lerG = (s: string) => Math.round(Number(s.replace(",", ".")) * 10) || 0;
 
-export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDados; categorias: string[] }) {
+export function FormProduto({
+  produto,
+  categorias,
+  fornecedores,
+}: {
+  produto?: ProdutoCardDados;
+  categorias: string[];
+  fornecedores: OpcaoFornecedor[];
+}) {
   const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(salvarProduto, {});
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(produto?.foto_url ?? null);
@@ -82,6 +91,9 @@ export function FormProduto({ produto, categorias }: { produto?: ProdutoCardDado
         <div className="grid gap-3 sm:grid-cols-2">
           <Campo rotulo="Nome *" className="sm:col-span-2">
             <Input name="nome" required defaultValue={produto?.nome} maxLength={120} />
+          </Campo>
+          <Campo rotulo="Fornecedor" className="sm:col-span-2">
+            <SeletorFornecedor name="fornecedor_id" fornecedores={fornecedores} valor={produto?.fornecedor_id ?? null} />
           </Campo>
           <Campo rotulo="Categoria">
             <Input name="categoria" list="categorias" defaultValue={produto?.categoria ?? ""} />
