@@ -2,9 +2,9 @@
 
 | # | Módulo | Conteúdo | Estado |
 |---|---|---|---|
-| 0 | Fundação | Monorepo, core (dinheiro/gramas/descontos/níveis), layout, PWA, CI, login Supabase | em andamento |
-| 1 | Produtos e estoque | Nome, categoria, foto, descrição, preço/g, 5 níveis (cheio, metade, chegando ao fim, muito baixo, acabou), observações. Entrada por lote com fornecedor, à vista ou a prazo (gera conta a pagar). Card completo. Barra estilo "vida de jogo". | — |
-| 2 | Pessoas | Clientes e fornecedores no mesmo cadastro. Ranking de quem mais pegou: mês, bimestre, trimestre, semestre, ano. | — |
+| 0 | Fundação | Monorepo, core (dinheiro/gramas/descontos/níveis), layout, PWA, CI, login Supabase | ✅ pronto |
+| 1 | Produtos e estoque | Nome, categoria, foto, descrição, preço/g, 5 níveis (cheio, metade, chegando ao fim, muito baixo, acabou), observações. Entrada por lote com fornecedor, à vista ou a prazo (gera conta a pagar). Card completo. Barra estilo "vida de jogo". | ✅ pronto (conta a pagar automática entra na fase 4) |
+| 2 | Pessoas | Clientes e fornecedores no mesmo cadastro. Ranking de quem mais pegou: mês, bimestre, trimestre, semestre, ano. | básico pronto (cadastro + lista) |
 | 3 | Vendas | Saídas em gramas, 3 tipos de desconto, promoções, baixa automática (FIFO por lote), lucro por venda. | — |
 | 4 | Contas | A pagar e a receber. Parcelas fixas ou dinâmicas, baixa de qualquer valor, postergação com histórico e dias postergados. | — |
 | 5 | Painel | Atrasos em destaque, estoque acabando, faturamento e lucro. Relatório de pendências (vermelho atrasado / laranja próximo / verde normal) com idade da dívida. | — |

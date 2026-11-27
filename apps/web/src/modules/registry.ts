@@ -26,8 +26,8 @@ export interface Modulo {
 
 export const MODULOS: Modulo[] = [
   { slug: "", label: "Painel", icon: LayoutDashboard, fase: 5, pronto: true, resumo: "Visão geral, atrasos e alertas" },
-  { slug: "produtos", label: "Produtos", icon: Package, fase: 1, pronto: false, resumo: "Catálogo, lotes e níveis de estoque" },
-  { slug: "pessoas", label: "Pessoas", icon: Users, fase: 2, pronto: false, resumo: "Clientes e fornecedores, rankings" },
+  { slug: "produtos", label: "Produtos", icon: Package, fase: 1, pronto: true, resumo: "Catálogo, lotes e níveis de estoque" },
+  { slug: "pessoas", label: "Pessoas", icon: Users, fase: 2, pronto: true, resumo: "Clientes e fornecedores, rankings" },
   { slug: "vendas", label: "Vendas", icon: ShoppingCart, fase: 3, pronto: false, resumo: "Saídas, descontos e lucro" },
   { slug: "contas", label: "Contas", icon: HandCoins, fase: 4, pronto: false, resumo: "A pagar e a receber, fiado, parcelas" },
   { slug: "calendario", label: "Calendário", icon: CalendarDays, fase: 6, pronto: false, resumo: "Vencimentos e lembretes" },

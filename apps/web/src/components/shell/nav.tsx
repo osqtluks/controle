@@ -13,7 +13,10 @@ function ativo(pathname: string, h: string) {
 
 /** Barra lateral (desktop). */
 export function Sidebar() {
-  const pathname = usePathname();
+  return <SidebarView pathname={usePathname()} />;
+}
+
+export function SidebarView({ pathname }: { pathname: string }) {
   return (
     <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-line bg-panel px-3 py-5">
       <div className="px-3 pb-6 text-lg font-semibold tracking-tight">
@@ -53,7 +56,10 @@ export function Sidebar() {
 const NO_CELULAR = ["", "vendas", "contas", "produtos", "calendario"];
 
 export function BottomNav() {
-  const pathname = usePathname();
+  return <BottomNavView pathname={usePathname()} />;
+}
+
+export function BottomNavView({ pathname }: { pathname: string }) {
   const itens = NO_CELULAR.map((s) => MODULOS.find((m) => m.slug === s)!);
   return (
     <nav className="md:hidden fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-panel/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">

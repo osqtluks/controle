@@ -18,6 +18,14 @@ Sistema pessoal (1 usuário) de vendas, estoque, contas a pagar/receber, calend�
 - Módulos não importam telas uns dos outros. Integração entre módulos por eventos/tabelas, regras compartilhadas via `@ct/core`.
 - Toda tabela com ordenação completa (valor, atraso, data, nome) — requisito do usuário.
 
+## Banco (Supabase)
+- Migrations em `supabase/migrations/`. Nunca editar migration já aplicada: crie outra.
+- Toda tabela: `owner_id default auth.uid()`, RLS `owner_id = (select auth.uid())`, `grant` explícito para `authenticated`.
+- Visões com `security_invoker = true`. Funções novas sem EXECUTE público (default já revogado).
+- Aplicar: `npx supabase db push --remote --yes`. Conferir: `npx supabase db advisors --remote`.
+- Leitura no server: `@/lib/supabase/server` (já chama `connection()`); dado de usuário sempre dentro de `<Suspense>`.
+- Módulo = `src/modules/<nome>/{tipos.ts, dados.ts (server-only), acoes.ts (server actions), componentes/}`.
+
 ## Comandos (na raiz)
 - `npm run dev` — sobe o app
 - `npm run check` — typecheck + lint + testes (rodar antes de todo commit)
