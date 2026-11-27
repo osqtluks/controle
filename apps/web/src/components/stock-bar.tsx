@@ -38,8 +38,14 @@ export function StockBar({ qty, limites, compacta }: { qty: Dg; limites: StockTh
       {!compacta && (
         <div className="mb-1.5 flex items-baseline justify-between text-xs">
           <span className={cn("font-semibold uppercase tracking-wider", TEXTO[nivel])}>{STOCK_LEVEL_LABEL[nivel]}</span>
-          <span className="tabular-nums text-muted">
-            {formatGrams(qty)} <span className="text-faint">/ {formatGrams(limites.cheio)}</span>
+          {/* Mostra o estoque real; a referência é o limite "cheio" do produto, não o total comprado. */}
+          <span className="tabular-nums">
+            <span className="font-semibold text-fg">{formatGrams(qty)}</span>
+            <span className="text-faint">
+              {qty > limites.cheio
+                ? ` · +${formatGrams(qty - limites.cheio)} acima do cheio`
+                : ` · cheio a partir de ${formatGrams(limites.cheio)}`}
+            </span>
           </span>
         </div>
       )}
