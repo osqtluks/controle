@@ -119,10 +119,20 @@ export async function salvarProduto(_: EstadoForm, f: FormData): Promise<EstadoF
   redirect(`/produtos/${produtoId}`);
 }
 
-export async function arquivarProduto(id: string, arquivado: boolean) {
+/** Manda para a Lixeira (some das telas, mas dá para restaurar) ou restaura. */
+export async function moverParaLixeira(id: string, naLixeira: boolean) {
   const supabase = await createClient();
-  const { error } = await supabase.from("produtos").update({ arquivado }).eq("id", id);
+  const { error } = await supabase.from("produtos").update({ arquivado: naLixeira }).eq("id", id);
   if (error) throw new Error(error.message);
+  refresh();
+}
+
+/** Excluir de vez: apaga produto, entradas e histórico. Não tem volta. */
+export async function excluirDeVez(id: string) {
+  const supabase = await createClient();
+  const { data: foto, error } = await supabase.rpc("excluir_produto_definitivo", { p_id: id });
+  if (error) throw new Error(`Não foi possível excluir: ${error.message}`);
+  if (foto) await supabase.storage.from("produtos").remove([foto as string]);
   refresh();
 }
 

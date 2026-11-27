@@ -9,7 +9,7 @@ import { ListaProdutos } from "@/modules/produtos/componentes/lista";
 export const metadata: Metadata = { title: "Produtos" };
 
 async function Lista() {
-  const produtos = await listarProdutos();
+  const produtos = await listarProdutos(true); // inclui a Lixeira; a lista separa
   if (!produtos.length)
     return (
       <div className="rounded-xl border border-dashed border-line p-10 text-center">

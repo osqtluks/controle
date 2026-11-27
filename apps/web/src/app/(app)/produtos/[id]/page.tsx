@@ -15,7 +15,7 @@ import { Historico } from "@/modules/produtos/componentes/historico";
 import { TabelaLotes } from "@/modules/produtos/componentes/tabela-lotes";
 import { FornecedorProduto } from "@/modules/produtos/componentes/fornecedor-produto";
 import { EditarPrecos } from "@/modules/produtos/componentes/editar-precos";
-import { BotaoArquivar } from "@/modules/produtos/componentes/botao-arquivar";
+import { AcoesLixeira } from "@/modules/produtos/componentes/botoes-lixeira";
 import { limitesDe, tabelaDe } from "@/modules/produtos/tipos";
 
 export const metadata: Metadata = { title: "Produto" };
@@ -45,17 +45,23 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
     <>
       <Cabecalho
         titulo={p.nome}
-        sub={[p.categoria, p.arquivado ? "arquivado" : null].filter(Boolean).join(" · ") || "Sem categoria"}
+        sub={p.categoria ?? "Sem categoria"}
         voltar="/produtos"
         acoes={
           <>
-            <BotaoArquivar id={p.id} arquivado={p.arquivado} />
             <Link href={`/produtos/${p.id}/editar`} className={linkBotaoSec}>
               <Pencil size={15} /> Editar
             </Link>
           </>
         }
       />
+
+      {p.arquivado && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <p className="text-sm text-red-300">Este produto está na Lixeira e não aparece nas listas.</p>
+          <AcoesLixeira id={p.id} nome={p.nome} voltarPara="/produtos" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-4">

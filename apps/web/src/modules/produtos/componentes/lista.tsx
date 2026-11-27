@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { NIVEIS_DE_ALERTA, custoPorGrama, priceFor, stockLevel, stockPercent } from "@ct/core";
 import { ControleOrdem, useOrdenacao, type OpcaoOrdem } from "@/components/ui/ordenacao";
 import { cn } from "@/lib/cn";
@@ -25,23 +25,26 @@ export function ListaProdutos({ produtos }: { produtos: ProdutoCardDados[] }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState("");
   const [soAlerta, setSoAlerta] = useState(false);
+  const [verLixeira, setVerLixeira] = useState(false);
+  const naLixeira = produtos.filter((p) => p.arquivado).length;
+  const base = useMemo(() => produtos.filter((p) => p.arquivado === verLixeira), [produtos, verLixeira]);
 
   const categorias = useMemo(
-    () => [...new Set(produtos.map((p) => p.categoria).filter(Boolean) as string[])].sort(),
-    [produtos],
+    () => [...new Set(base.map((p) => p.categoria).filter(Boolean) as string[])].sort(),
+    [base],
   );
   const emAlerta = (p: ProdutoCardDados) => NIVEIS_DE_ALERTA.has(stockLevel(p.estoque_dg, limitesDe(p)));
-  const qtdAlerta = produtos.filter(emAlerta).length;
+  const qtdAlerta = base.filter(emAlerta).length;
 
   const filtrados = useMemo(() => {
     const b = busca.trim().toLocaleLowerCase("pt-BR");
-    return produtos.filter(
+    return base.filter(
       (p) =>
         (!b || p.nome.toLocaleLowerCase("pt-BR").includes(b)) &&
         (!categoria || p.categoria === categoria) &&
         (!soAlerta || emAlerta(p)),
     );
-  }, [produtos, busca, categoria, soAlerta]);
+  }, [base, busca, categoria, soAlerta]);
 
   const ord = useOrdenacao(filtrados, ORDEM, "nivel");
 
@@ -81,10 +84,27 @@ export function ListaProdutos({ produtos }: { produtos: ProdutoCardDados[] }) {
           Repor ({qtdAlerta})
         </button>
         <ControleOrdem opcoes={ORDEM} {...ord} />
+        {(naLixeira > 0 || verLixeira) && (
+          <button
+            type="button"
+            onClick={() => setVerLixeira((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm",
+              verLixeira ? "border-red-500/50 bg-red-500/15 text-red-300" : "border-line bg-card text-muted",
+            )}
+          >
+            <Trash2 size={14} /> {verLixeira ? "Voltar aos produtos" : `Lixeira (${naLixeira})`}
+          </button>
+        )}
       </div>
+      {verLixeira && (
+        <p className="text-xs text-muted">
+          Produtos na Lixeira não aparecem no Menu nem nos alertas. Restaure ou exclua de vez.
+        </p>
+      )}
 
       {ord.ordenados.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">Nenhum produto encontrado.</p>
+        <p className="py-10 text-center text-sm text-muted">{verLixeira ? "A Lixeira está vazia." : "Nenhum produto encontrado."}</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {ord.ordenados.map((p) => (

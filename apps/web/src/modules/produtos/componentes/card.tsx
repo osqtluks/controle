@@ -5,6 +5,7 @@ import { StockBar } from "@/components/stock-bar";
 import { diasAte, formatData } from "@/lib/datas";
 import { cn } from "@/lib/cn";
 import { limitesDe, type ProdutoEstoque } from "../tipos";
+import { AcoesLixeira, BotaoLixeiraCard } from "./botoes-lixeira";
 
 export type ProdutoCardDados = ProdutoEstoque & { foto_url: string | null };
 
@@ -32,7 +33,7 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
       href={`/produtos/${p.id}`}
       className={cn(
         "group flex flex-col overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-accent/50",
-        p.arquivado && "opacity-50",
+        p.arquivado && "border-dashed border-red-500/40",
       )}
     >
       <div className="flex gap-3 p-4">
@@ -49,7 +50,10 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="truncate font-medium">{p.nome}</h3>
-            <span className="shrink-0 text-sm font-semibold tabular-nums">{formatBRL(p.preco_cents_por_grama)}/g</span>
+            <div className="flex shrink-0 items-start gap-1">
+              <span className="text-sm font-semibold tabular-nums">{formatBRL(p.preco_cents_por_grama)}/g</span>
+              {!p.arquivado && <BotaoLixeiraCard id={p.id} nome={p.nome} />}
+            </div>
           </div>
           <p className="truncate text-xs text-muted">{p.categoria ?? "Sem categoria"}</p>
           <div className="mt-1.5 flex flex-wrap gap-1">
@@ -61,6 +65,12 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
       <div className="px-4 pb-3">
         <StockBar qty={p.estoque_dg} limites={limitesDe(p)} />
       </div>
+
+      {p.arquivado && (
+        <div className="px-4 pb-3">
+          <AcoesLixeira id={p.id} nome={p.nome} />
+        </div>
+      )}
 
       <dl className="mt-auto grid grid-cols-3 border-t border-line text-center text-[11px]">
         <div className="px-2 py-2">

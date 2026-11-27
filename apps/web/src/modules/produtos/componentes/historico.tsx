@@ -83,7 +83,7 @@ function linhas(e: EventoHistorico, nomes: Nomes): Linha[] {
   }));
   if (!igual(a.foto_path, d.foto_path)) out.push({ ...base, chave: `${e.id}-foto`, texto: "Você trocou a foto" });
   if (!igual(a.arquivado, d.arquivado))
-    out.push({ ...base, chave: `${e.id}-arq`, texto: d.arquivado ? "Você arquivou o produto" : "Você reativou o produto" });
+    out.push({ ...base, chave: `${e.id}-arq`, texto: d.arquivado ? "Você mandou o produto para a Lixeira" : "Você restaurou o produto da Lixeira" });
   return out;
 }
 
