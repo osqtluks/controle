@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   HandCoins,
+  History,
   LayoutDashboard,
   ScrollText,
   Leaf,
@@ -35,6 +36,7 @@ export const MODULOS: Modulo[] = [
   { slug: "calendario", label: "Calendário", icon: CalendarDays, fase: 6, pronto: false, resumo: "Vencimentos e lembretes" },
   { slug: "financas", label: "Finanças", icon: Wallet, fase: 9, pronto: false, resumo: "Entradas, saídas e saldo" },
   { slug: "cultivo", label: "Cultivo", icon: Leaf, fase: 10, pronto: false, resumo: "Diário de cultivo" },
+  { slug: "exclusoes", label: "Exclusões", icon: History, fase: 1, pronto: true, resumo: "Histórico de exclusões e restauração" },
   { slug: "configuracoes", label: "Ajustes", icon: Settings, fase: 7, pronto: false, resumo: "Notificações e preferências" },
 ];
 

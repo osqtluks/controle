@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { NIVEIS_DE_ALERTA, custoPorGrama, priceFor, stockLevel, stockPercent } from "@ct/core";
@@ -99,7 +100,11 @@ export function ListaProdutos({ produtos }: { produtos: ProdutoCardDados[] }) {
       </div>
       {verLixeira && (
         <p className="text-xs text-muted">
-          Produtos na Lixeira não aparecem no Menu nem nos alertas. Restaure ou exclua de vez.
+          Produtos na Lixeira não aparecem no Menu nem nos alertas. Restaure ou exclua de vez. Tudo fica no{" "}
+          <Link href="/exclusoes" className="text-accent hover:underline">
+            Histórico de exclusões
+          </Link>
+          .
         </p>
       )}
 

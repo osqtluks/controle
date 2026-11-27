@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Toaster } from "sonner";
 import { BottomNav, BottomNavView, Sidebar, SidebarView } from "@/components/shell/nav";
 
 // Área logada. Quem não tem sessão é barrado antes, no `src/proxy.ts`,
@@ -14,6 +15,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={<BottomNavView pathname="" />}>
         <BottomNav />
       </Suspense>
+      {/* Avisos (ex.: "foi para a Lixeira · Desfazer"); no celular, acima da barra inferior. */}
+      <Toaster theme="dark" position="bottom-center" richColors closeButton mobileOffset={{ bottom: 80 }} />
     </>
   );
 }

@@ -119,20 +119,31 @@ export async function salvarProduto(_: EstadoForm, f: FormData): Promise<EstadoF
   redirect(`/produtos/${produtoId}`);
 }
 
-/** Manda para a Lixeira (some das telas, mas dá para restaurar) ou restaura. */
+/** Manda para a Lixeira (some das telas, mas dá para restaurar) ou restaura. Registra em Exclusões. */
 export async function moverParaLixeira(id: string, naLixeira: boolean) {
   const supabase = await createClient();
-  const { error } = await supabase.from("produtos").update({ arquivado: naLixeira }).eq("id", id);
+  const { error } = await supabase.rpc("definir_lixeira", { p_id: id, p_na_lixeira: naLixeira });
   if (error) throw new Error(error.message);
   refresh();
 }
 
-/** Excluir de vez: apaga produto, entradas e histórico. Não tem volta. */
-export async function excluirDeVez(id: string) {
+/**
+ * Excluir de vez: guarda uma cópia completa em Exclusões e apaga.
+ * Retorna o id da exclusão (para "Desfazer"). A foto fica guardada para a restauração.
+ */
+export async function excluirDeVez(id: string): Promise<string> {
   const supabase = await createClient();
-  const { data: foto, error } = await supabase.rpc("excluir_produto_definitivo", { p_id: id });
+  const { data, error } = await supabase.rpc("excluir_produto_definitivo", { p_id: id });
   if (error) throw new Error(`Não foi possível excluir: ${error.message}`);
-  if (foto) await supabase.storage.from("produtos").remove([foto as string]);
+  refresh();
+  return data as string;
+}
+
+/** "Voltar a esse estado": desfaz uma exclusão (Lixeira ou definitiva). */
+export async function restaurarExclusao(exclusaoId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("restaurar_exclusao", { p_exclusao: exclusaoId });
+  if (error) throw new Error(error.message);
   refresh();
 }
 

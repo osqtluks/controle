@@ -3,8 +3,30 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/cn";
-import { excluirDeVez, moverParaLixeira } from "../acoes";
+import { excluirDeVez, moverParaLixeira, restaurarExclusao } from "../acoes";
+
+/** Aviso de exclusão com botão "Desfazer" (fica 10 s na tela). */
+function avisarComDesfazer(mensagem: string, desfazer: () => Promise<void>) {
+  toast(mensagem, {
+    duration: 10_000,
+    action: {
+      label: "Desfazer",
+      onClick: () =>
+        toast.promise(desfazer(), {
+          loading: "Desfazendo…",
+          success: "Pronto, voltou como estava.",
+          error: (e: Error) => e.message,
+        }),
+    },
+  });
+}
+
+async function mandarParaLixeira(id: string, nome: string) {
+  await moverParaLixeira(id, true);
+  avisarComDesfazer(`"${nome}" foi para a Lixeira.`, () => moverParaLixeira(id, false));
+}
 
 /** Lixeirinha vermelha no canto do card da lista. Não abre o produto ao tocar. */
 export function BotaoLixeiraCard({ id, nome }: { id: string; nome: string }) {
@@ -18,8 +40,8 @@ export function BotaoLixeiraCard({ id, nome }: { id: string; nome: string }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (confirm(`Excluir "${nome}"?\n\nEle vai para a Lixeira e dá para restaurar depois.`))
-          iniciar(() => moverParaLixeira(id, true));
+        if (confirm(`Excluir "${nome}"?\n\nEle vai para a Lixeira e dá para desfazer.`))
+          iniciar(() => mandarParaLixeira(id, nome));
       }}
       className="rounded-md p-1.5 text-red-400/70 transition-colors hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
     >
@@ -37,9 +59,9 @@ export function BotaoExcluirEdicao({ id, nome }: { id: string; nome: string }) {
       type="button"
       disabled={pendente}
       onClick={() => {
-        if (!confirm(`Excluir "${nome}"?\n\nEle vai para a Lixeira e dá para restaurar depois.`)) return;
+        if (!confirm(`Excluir "${nome}"?\n\nEle vai para a Lixeira e dá para desfazer.`)) return;
         iniciar(async () => {
-          await moverParaLixeira(id, true);
+          await mandarParaLixeira(id, nome);
           router.push("/produtos");
         });
       }}
@@ -62,7 +84,10 @@ export function AcoesLixeira({ id, nome, voltarPara }: { id: string; nome: strin
         disabled={pendente}
         onClick={(e) => {
           e.preventDefault();
-          iniciar(() => moverParaLixeira(id, false));
+          iniciar(async () => {
+            await moverParaLixeira(id, false);
+            toast.success(`"${nome}" foi restaurado.`);
+          });
         }}
         className={cn(btn, "border border-line bg-card text-fg hover:bg-hover")}
       >
@@ -75,12 +100,13 @@ export function AcoesLixeira({ id, nome, voltarPara }: { id: string; nome: strin
           e.preventDefault();
           if (
             !confirm(
-              `Excluir "${nome}" DE VEZ?\n\nApaga o produto, todas as entradas de estoque, a foto e o histórico.\nNão dá para desfazer.`,
+              `Excluir "${nome}" de vez?\n\nSome o produto, as entradas, a foto e o histórico.\nUma cópia fica no Histórico de exclusões para você poder voltar.`,
             )
           )
             return;
           iniciar(async () => {
-            await excluirDeVez(id);
+            const exclusao = await excluirDeVez(id);
+            avisarComDesfazer(`"${nome}" foi excluído de vez.`, () => restaurarExclusao(exclusao));
             if (voltarPara) router.push(voltarPara);
           });
         }}
