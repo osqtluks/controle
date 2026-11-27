@@ -6,8 +6,8 @@
 | 1 | Produtos e estoque | Nome, categoria, foto, descrição, preço/g, 5 níveis (cheio, metade, chegando ao fim, muito baixo, acabou), observações. Entrada por lote com fornecedor, à vista ou a prazo (gera conta a pagar). Card completo. Barra estilo "vida de jogo". | ✅ pronto (conta a pagar automática entra na fase 4) |
 | 2 | Pessoas | Clientes e fornecedores no mesmo cadastro. Ranking de quem mais pegou: mês, bimestre, trimestre, semestre, ano. | básico pronto (cadastro + lista) |
 | 3 | Vendas | Saídas em gramas, 3 tipos de desconto, promoções, baixa automática (FIFO por lote), lucro por venda. | ✅ pronto (+ Desempenho por produto, cancelamento reversível) |
-| 4 | Contas | A pagar e a receber. Parcelas fixas ou dinâmicas, baixa de qualquer valor, postergação com histórico e dias postergados. | — |
-| 5 | Painel | Atrasos em destaque, estoque acabando, faturamento e lucro. Relatório de pendências (vermelho atrasado / laranja próximo / verde normal) com idade da dívida. | — |
+| 4 | Contas | A pagar e a receber. Parcelas fixas ou dinâmicas, baixa de qualquer valor, postergação com histórico e dias postergados. | ✅ pronto (fiado e compras a prazo viram contas sozinhos) |
+| 5 | Painel | Atrasos em destaque, estoque acabando, faturamento e lucro. Relatório de pendências (vermelho atrasado / laranja próximo / verde normal) com idade da dívida. | parcial: atrasos no Painel e pendências coloridas em Contas |
 | 6 | Calendário | Vencimentos + lembretes pessoais no mesmo calendário. | — |
 | 7 | Notificações | Push, e-mail, WhatsApp (escolha no app). Lembrete do fim do dia: "fulano já te pagou?". | — |
 | 8 | Relatórios | Relatórios e previsão de vendas. | — |

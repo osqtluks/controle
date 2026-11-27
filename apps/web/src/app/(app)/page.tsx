@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { formatBRL, formatLucro, NIVEIS_DE_ALERTA, stockLevel, stockPercent } from "@ct/core";
+import { formatBRL, formatLucro, NIVEIS_DE_ALERTA, situacaoDe, stockLevel, stockPercent, type InfoSituacao } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
 import { MODULOS, href } from "@/modules/registry";
 import { listarProdutos } from "@/modules/produtos/dados";
-import { SeloVencimento } from "@/modules/produtos/componentes/card";
 import { limitesDe } from "@/modules/produtos/tipos";
-import { diasAte, FUSO, hojeISO } from "@/lib/datas";
+import { FUSO, hojeISO } from "@/lib/datas";
+import { contasAbertas } from "@/modules/contas/dados";
+import type { Conta } from "@/modules/contas/tipos";
+import { SeloSituacao } from "@/modules/contas/componentes/lista-contas";
 import { totaisDesde } from "@/modules/vendas/dados";
 import { Plus } from "lucide-react";
 
@@ -25,12 +27,9 @@ async function Alertas() {
   const repor = produtos
     .filter((p) => NIVEIS_DE_ALERTA.has(stockLevel(p.estoque_dg, limitesDe(p))))
     .sort((a, b) => stockPercent(a.estoque_dg, limitesDe(a)) - stockPercent(b.estoque_dg, limitesDe(b)));
-  const pagar = produtos
-    .filter((p) => p.proximo_vencimento && diasAte(p.proximo_vencimento) <= 7)
-    .sort((a, b) => a.proximo_vencimento!.localeCompare(b.proximo_vencimento!));
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div>
       <Bloco titulo={`Repor estoque (${repor.length})`}>
         {repor.length === 0 ? (
           <p className="text-sm text-muted">Tudo abastecido. 👌</p>
@@ -47,22 +46,71 @@ async function Alertas() {
           </ul>
         )}
       </Bloco>
-      <Bloco titulo={`Pagamentos a prazo nos próximos 7 dias (${pagar.length})`}>
-        {pagar.length === 0 ? (
-          <p className="text-sm text-muted">Nada vencendo esta semana.</p>
-        ) : (
-          <ul className="space-y-2">
-            {pagar.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2">
-                <Link href={`/produtos/${p.id}`} className="truncate text-sm hover:underline">
-                  {p.nome}
-                </Link>
-                <SeloVencimento data={p.proximo_vencimento} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Bloco>
+    </div>
+  );
+}
+
+function ListaAtencao({ xs }: { xs: (Conta & { info: InfoSituacao })[] }) {
+  return (
+    <ul className="divide-y divide-line/60">
+      {xs.map((c) => (
+        <li key={c.id}>
+          <Link href={`/contas/${c.id}`} className="flex items-center justify-between gap-3 py-2 hover:opacity-80">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium">
+                {c.pessoa?.nome ?? "—"} <span className="font-normal text-muted">· {c.descricao}</span>
+              </div>
+              <div className={c.tipo === "receber" ? "text-[11px] text-emerald-400/80" : "text-[11px] text-sky-300/80"}>
+                {c.tipo === "receber" ? "me deve" : "eu devo"}
+                {c.dias_remarcados > 0 && <span className="text-violet-300"> · remarcada +{c.dias_remarcados} dias</span>}
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-sm font-semibold tabular-nums">{formatBRL(c.restante_cents)}</div>
+              <SeloSituacao info={c.info} />
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Contas atrasadas (vermelho) e vencendo em até 3 dias (laranja), a receber e a pagar. */
+async function Atencao() {
+  await connection();
+  const hoje = hojeISO();
+  const contas = (await contasAbertas()).map((c) => ({ ...c, info: situacaoDe(c.restante_cents, c.proximo_vencimento, hoje) }));
+  const atrasadas = contas.filter((c) => c.info.situacao === "atrasada").sort((a, b) => (b.info.dias ?? 0) - (a.info.dias ?? 0));
+  const logo = contas.filter((c) => c.info.situacao === "vence_logo").sort((a, b) => (b.info.dias ?? 0) - (a.info.dias ?? 0));
+  const soma = (xs: typeof contas, t: "receber" | "pagar") => xs.filter((c) => c.tipo === t).reduce((s, c) => s + c.restante_cents, 0);
+
+  if (!atrasadas.length && !logo.length)
+    return (
+      <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-emerald-300">
+        Nenhuma conta atrasada nem vencendo nos próximos dias. ✓
+      </section>
+    );
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {atrasadas.length > 0 && (
+        <section className="rounded-xl border-2 border-red-500/50 bg-red-500/[0.06] p-4">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-red-300">⚠ Atrasadas ({atrasadas.length})</h2>
+            <span className="text-[11px] text-red-300/80">
+              receber {formatBRL(soma(atrasadas, "receber"))} · pagar {formatBRL(soma(atrasadas, "pagar"))}
+            </span>
+          </div>
+          <ListaAtencao xs={atrasadas} />
+        </section>
+      )}
+      {logo.length > 0 && (
+        <section className="rounded-xl border border-orange-500/40 bg-orange-500/[0.05] p-4">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-orange-300">Vencem logo ({logo.length})</h2>
+          <ListaAtencao xs={logo} />
+        </section>
+      )}
     </div>
   );
 }
@@ -109,6 +157,10 @@ export default function Painel() {
           <Plus size={16} /> Nova venda
         </Link>
       </div>
+
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-xl border border-line bg-card" />}>
+        <Atencao />
+      </Suspense>
 
       <Suspense fallback={<div className="h-24 animate-pulse rounded-xl border border-line bg-card" />}>
         <ResumoVendas />

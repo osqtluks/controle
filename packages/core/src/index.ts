@@ -6,3 +6,4 @@ export * from "./cost";
 export * from "./sort";
 export * from "./tiers";
 export * from "./venda";
+export * from "./contas";

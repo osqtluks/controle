@@ -18,6 +18,8 @@ Sistema pessoal (1 usuário) de vendas, estoque, contas a pagar/receber, calend�
 - Módulos não importam telas uns dos outros. Integração entre módulos por eventos/tabelas, regras compartilhadas via `@ct/core`.
 - Datas/horas sempre em America/Sao_Paulo via `@/lib/datas` (servidor roda em UTC).
 - Histórico de alterações: tabela `historico` (trigger); textos "Você mudou X de A para B" em `modules/produtos/componentes/historico.tsx`.
+- Toda exclusão é reversível: aviso "Desfazer" + registro em `exclusoes` (Histórico de exclusões). Seguir em módulos novos.
+- Contas: parcelas com vencimento original imutável; remarcar via `remarcar_parcela`; pagamentos alocados da parcela mais antiga; tudo em `conta_eventos`.
 - Toda tabela com ordenação completa (valor, atraso, data, nome) — requisito do usuário.
 
 ## Banco (Supabase)

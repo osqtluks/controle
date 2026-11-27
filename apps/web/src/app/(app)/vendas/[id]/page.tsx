@@ -7,6 +7,7 @@ import { Cabecalho, Secao } from "@/components/ui/pagina";
 import { cn } from "@/lib/cn";
 import { formatData, formatDataHora } from "@/lib/datas";
 import { obterVenda } from "@/modules/vendas/dados";
+import { contaDaVenda } from "@/modules/contas/dados";
 import { BotaoCancelarVenda, BotaoReativarVenda } from "@/modules/vendas/componentes/botoes-venda";
 import { descreverDesconto, ROTULO_FAIXA } from "@/modules/vendas/tipos";
 
@@ -16,6 +17,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const v = await obterVenda(id);
   if (!v) notFound();
+  const conta = v.pagamento === "fiado" ? await contaDaVenda(v.id) : null;
   const lucro = v.total_cents - v.custo_cents;
   const margem = v.total_cents > 0 ? Math.round((lucro * 10000) / v.total_cents) : null;
 
@@ -134,7 +136,16 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
         <div className="rounded-xl border border-line bg-card p-3">
           <div className="text-[11px] text-faint">Pagamento</div>
           {v.pagamento === "fiado" ? (
-            <span className="text-orange-300">Fiado{v.vencimento ? ` · combinado para ${formatData(v.vencimento)}` : ""}</span>
+            <>
+              <span className="text-orange-300">Fiado{v.vencimento ? ` · combinado para ${formatData(v.vencimento)}` : ""}</span>
+              {conta && (
+                <Link href={`/contas/${conta.id}`} className="mt-1 block text-accent hover:underline">
+                  {conta.restante_cents > 0
+                    ? `Falta receber ${formatBRL(conta.restante_cents)}${conta.pago_cents > 0 ? ` (já recebeu ${formatBRL(conta.pago_cents)})` : ""} →`
+                    : "Quitada ✓ — ver conta →"}
+                </Link>
+              )}
+            </>
           ) : (
             <span className="text-emerald-300">Recebido na hora</span>
           )}

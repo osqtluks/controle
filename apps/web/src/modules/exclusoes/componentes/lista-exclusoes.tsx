@@ -87,17 +87,19 @@ export function ListaExclusoes({ exclusoes }: { exclusoes: Exclusao[] }) {
             {ord.ordenados.map((e) => {
               const [selo, cor] = SELO[e.sit];
               const detalhe =
-                e.tipo === "cancelada"
+                e.entidade === "conta"
+                  ? `Conta · ${formatBRL(e.resumo.total_cents ?? 0)} (faltava ${formatBRL(e.resumo.restante_cents ?? 0)})`
+                  : e.tipo === "cancelada"
                   ? `Venda · ${formatBRL(e.resumo.total_cents ?? 0)} · gramas devolvidas ao estoque`
                   : e.tipo === "definitiva"
                     ? `Produto · com ${e.resumo.entradas ?? 0} entrada(s), ${formatGrams(e.resumo.estoque_dg ?? 0)} em estoque`
                     : "Produto · mandado para a Lixeira";
-              const href = e.entidade === "venda" ? `/vendas/${e.registro_id}` : `/produtos/${e.registro_id}`;
+              const href = e.entidade === "venda" ? `/vendas/${e.registro_id}` : e.entidade === "conta" ? `/contas/${e.registro_id}` : `/produtos/${e.registro_id}`;
               return (
                 <tr key={e.id} className="border-b border-line/60 last:border-0">
                   <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-muted">{formatDataHora(e.em)}</td>
                   <td className="px-3 py-2.5">
-                    {e.sit === "restaurado" || e.entidade === "venda" ? (
+                    {e.sit === "restaurado" || e.entidade !== "produto" ? (
                       <Link href={href} className="font-medium hover:underline">
                         {e.nome}
                       </Link>
@@ -106,7 +108,7 @@ export function ListaExclusoes({ exclusoes }: { exclusoes: Exclusao[] }) {
                     )}
                     <div className="text-[11px] text-muted">{detalhe}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs">{e.tipo === "definitiva" ? "Excluído de vez" : e.tipo === "cancelada" ? "Venda cancelada" : "Lixeira"}</td>
+                  <td className="px-3 py-2.5 text-xs">{e.tipo === "definitiva" ? "Excluído de vez" : e.entidade === "conta" ? "Conta cancelada" : e.tipo === "cancelada" ? "Venda cancelada" : "Lixeira"}</td>
                   <td className="px-3 py-2.5">
                     <span className={cn("rounded-full px-2 py-0.5 text-[11px]", cor)}>{selo}</span>
                     {e.sit === "restaurado" && e.restaurado_em && (

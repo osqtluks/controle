@@ -34,7 +34,7 @@ export const MODULOS: Modulo[] = [
   { slug: "pessoas", label: "Pessoas", icon: Users, fase: 2, pronto: true, resumo: "Clientes e fornecedores, rankings" },
   { slug: "vendas", label: "Vendas", icon: ShoppingCart, fase: 3, pronto: true, resumo: "Saídas, descontos e lucro" },
   { slug: "cupons", label: "Cupons", icon: Ticket, fase: 3, pronto: true, resumo: "Cupons de desconto da semana" },
-  { slug: "contas", label: "Contas", icon: HandCoins, fase: 4, pronto: false, resumo: "A pagar e a receber, fiado, parcelas" },
+  { slug: "contas", label: "Contas", icon: HandCoins, fase: 4, pronto: true, resumo: "A pagar e a receber, fiado, parcelas" },
   { slug: "calendario", label: "Calendário", icon: CalendarDays, fase: 6, pronto: false, resumo: "Vencimentos e lembretes" },
   { slug: "financas", label: "Finanças", icon: Wallet, fase: 9, pronto: false, resumo: "Entradas, saídas e saldo" },
   { slug: "cultivo", label: "Cultivo", icon: Leaf, fase: 10, pronto: false, resumo: "Diário de cultivo" },
