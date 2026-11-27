@@ -2,14 +2,18 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Cabecalho } from "@/components/ui/pagina";
 import { listarPessoas } from "@/modules/pessoas/dados";
-import { listarProdutos } from "@/modules/produtos/dados";
+import { listarProdutos, lotesDisponiveis } from "@/modules/produtos/dados";
 import { NovaVenda } from "@/modules/vendas/componentes/nova-venda";
 
 export const metadata: Metadata = { title: "Nova venda" };
 
 async function Form() {
-  const [produtos, clientes] = await Promise.all([listarProdutos(), listarPessoas("clientes")]);
-  return <NovaVenda produtos={produtos} clientes={clientes} />;
+  const [produtos, clientes, lotes] = await Promise.all([
+    listarProdutos(),
+    listarPessoas("clientes"),
+    lotesDisponiveis(),
+  ]);
+  return <NovaVenda produtos={produtos} clientes={clientes} lotes={lotes} />;
 }
 
 export default function NovaVendaPage() {

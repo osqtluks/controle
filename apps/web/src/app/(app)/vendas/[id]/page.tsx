@@ -67,7 +67,8 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
             </thead>
             <tbody>
               {v.itens.map((i) => {
-                const l = i.total_cents - i.custo_cents;
+                const liquido = i.total_cents - i.desconto_geral_cents;
+                const l = liquido - i.custo_cents;
                 return (
                   <tr key={i.id} className="border-b border-line/60 last:border-0">
                     <td className="px-2 py-2">
@@ -81,8 +82,9 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
                     </td>
                     <td className="px-2 py-2 text-xs text-orange-300">
                       {i.desconto_cents > 0 ? `${descreverDesconto(i.desconto_tipo, i.desconto_valor)} (−${formatBRL(i.desconto_cents)})` : "—"}
+                      {i.desconto_geral_cents > 0 && <div>geral −{formatBRL(i.desconto_geral_cents)}</div>}
                     </td>
-                    <td className="px-2 py-2 text-right font-medium tabular-nums">{formatBRL(i.total_cents)}</td>
+                    <td className="px-2 py-2 text-right font-medium tabular-nums">{formatBRL(liquido)}</td>
                     <td className="px-2 py-2 text-right tabular-nums text-muted">{formatBRL(i.custo_cents)}</td>
                     <td className={cn("px-2 py-2 text-right tabular-nums", l < 0 ? "text-red-400" : "text-emerald-400")}>
                       {formatLucro(l)}
@@ -94,6 +96,39 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
           </table>
         </div>
       </Secao>
+
+      {(v.desconto_cents > 0 || v.desconto_geral_cents > 0) && (
+        <div className="mt-4 space-y-1 rounded-xl border border-line bg-card p-3 text-sm">
+          <div className="flex justify-between text-xs">
+            <span className="text-faint">Subtotal (preço de tabela)</span>
+            <span className="tabular-nums text-muted">{formatBRL(v.subtotal_cents)}</span>
+          </div>
+          {v.itens
+            .filter((i) => i.desconto_cents > 0)
+            .map((i) => (
+              <div key={i.id} className="flex justify-between text-xs text-orange-300">
+                <span>
+                  {descreverDesconto(i.desconto_tipo, i.desconto_valor)} em {i.produto?.nome}
+                </span>
+                <span className="tabular-nums">−{formatBRL(i.desconto_cents)}</span>
+              </div>
+            ))}
+          {v.desconto_geral_cents > 0 && (
+            <div className="flex justify-between text-xs text-orange-300">
+              <span>
+                {v.desconto_geral_tipo === "cupom"
+                  ? `cupom ${v.cupom_codigo} (${(v.desconto_geral_bps / 100).toLocaleString("pt-BR")}%)`
+                  : `${(v.desconto_geral_bps / 100).toLocaleString("pt-BR")}% na venda toda`}
+              </span>
+              <span className="tabular-nums">−{formatBRL(v.desconto_geral_cents)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-line/60 pt-1 font-semibold">
+            <span>Total</span>
+            <span className="tabular-nums">{formatBRL(v.total_cents)}</span>
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div className="rounded-xl border border-line bg-card p-3">

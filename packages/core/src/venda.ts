@@ -55,3 +55,28 @@ export function potencialDoEstoque(dg: Dg, tabela: TabelaPreco): { minCents: Cen
   const precos = [p.base, p.de10, p.de30];
   return { minCents: priceFor(dg, Math.min(...precos)), maxCents: priceFor(dg, Math.max(...precos)) };
 }
+
+/** Desconto geral (cupom ou % da venda) sobre a soma dos itens já com seus descontos. */
+export function descontoGeral(somaItens: Cents, bps: number): Cents {
+  if (bps <= 0) return 0;
+  return Math.min(somaItens, Math.round((somaItens * Math.min(bps, 10000)) / 10000));
+}
+
+/**
+ * Reparte `total` entre os itens na proporção de cada valor (maior resto recebe o centavo
+ * que sobra), para o lucro por produto continuar exato mesmo com cupom.
+ */
+export function ratear(valores: Cents[], total: Cents): Cents[] {
+  const soma = valores.reduce((s, v) => s + v, 0);
+  if (soma <= 0 || total <= 0) return valores.map(() => 0);
+  const brutos = valores.map((v) => (v * total) / soma);
+  const partes = brutos.map(Math.floor);
+  let sobra = total - partes.reduce((s, v) => s + v, 0);
+  const ordem = brutos.map((b, i) => [b - Math.floor(b), i] as const).sort((a, b) => b[0] - a[0]);
+  for (const [, i] of ordem) {
+    if (sobra <= 0) break;
+    partes[i]! += 1;
+    sobra -= 1;
+  }
+  return partes;
+}

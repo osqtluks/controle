@@ -14,6 +14,10 @@ export interface Venda {
   total_cents: number;
   custo_cents: number;
   cancelada_em: string | null;
+  desconto_geral_tipo: "none" | "cupom" | "percent";
+  desconto_geral_bps: number;
+  desconto_geral_cents: number;
+  cupom_codigo: string | null;
   cliente: { nome: string } | null;
   itens: VendaItem[];
 }
@@ -30,6 +34,7 @@ export interface VendaItem {
   desconto_cents: number;
   total_cents: number;
   custo_cents: number;
+  desconto_geral_cents: number;
   produto: { nome: string } | null;
 }
 

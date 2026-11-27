@@ -26,3 +26,19 @@ describe("desempenho", () => {
     expect(potencialDoEstoque(1500, tabela)).toEqual({ minCents: 1275000, maxCents: 1500000 });
   });
 });
+
+import { descontoGeral, ratear } from "./index";
+
+describe("desconto geral e rateio", () => {
+  it("aplica a % sobre a soma", () => {
+    expect(descontoGeral(228700, 500)).toBe(11435);
+    expect(descontoGeral(1000, 0)).toBe(0);
+  });
+  it("rateia proporcional e fecha o centavo", () => {
+    const r = ratear([231200, 47500], 13935);
+    expect(r.reduce((s, v) => s + v, 0)).toBe(13935);
+    expect(r).toEqual([11560, 2375]);
+    expect(ratear([1, 1, 1], 2)).toEqual([1, 1, 0]);
+    expect(ratear([0, 0], 10)).toEqual([0, 0]);
+  });
+});

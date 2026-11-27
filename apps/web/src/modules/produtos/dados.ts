@@ -66,3 +66,24 @@ export async function listarCategorias(): Promise<string[]> {
   const { data } = await supabase.from("produtos").select("categoria").not("categoria", "is", null);
   return [...new Set((data ?? []).map((r) => r.categoria as string))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
+
+/** Saldo de cada lote com estoque, mais antigos primeiro (para prever o custo exato de uma venda). */
+export async function lotesDisponiveis(): Promise<Record<string, { loteId: string; restanteDg: number; restanteCustoCents: number }[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lotes_saldo")
+    .select("id, produto_id, restante_dg, restante_custo_cents")
+    .gt("restante_dg", 0)
+    .order("data_compra")
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  const out: Record<string, { loteId: string; restanteDg: number; restanteCustoCents: number }[]> = {};
+  for (const l of data ?? []) {
+    (out[l.produto_id as string] ??= []).push({
+      loteId: l.id as string,
+      restanteDg: l.restante_dg as number,
+      restanteCustoCents: l.restante_custo_cents as number,
+    });
+  }
+  return out;
+}

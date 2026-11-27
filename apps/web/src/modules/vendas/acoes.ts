@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { calcularItem, descontoParaBanco, parseGrams } from "@ct/core";
+import { calcularItem, descontoGeral, descontoParaBanco, parseGrams, ratear } from "@ct/core";
 import { createClient } from "@/lib/supabase/server";
 import { lerDesconto, type DescontoDigitado } from "./tipos";
 
@@ -12,6 +12,25 @@ export interface NovaVenda {
   vencimento: string | null;
   observacoes: string;
   itens: { produto_id: string; quantidade: string; desconto: DescontoDigitado }[];
+  /** Desconto da venda toda: código de cupom ou % digitada. */
+  geral: { modo: "none" } | { modo: "cupom"; codigo: string } | { modo: "percent"; valor: string };
+}
+
+export type CupomValido = { id: string; codigo: string; bps: number; restam: number | null };
+
+/** Procura um cupom pelo código e diz se ele vale agora. */
+export async function buscarCupom(codigo: string): Promise<CupomValido | { erro: string }> {
+  const c = codigo.trim().toUpperCase();
+  if (!c) return { erro: "Digite o código." };
+  const supabase = await createClient();
+  const { data } = await supabase.from("cupons_uso").select("*").eq("codigo", c).maybeSingle();
+  if (!data) return { erro: `Cupom ${c} não existe.` };
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  if (!data.ativo) return { erro: `Cupom ${c} está desativado.` };
+  if (data.valido_de && hoje < data.valido_de) return { erro: `Cupom ${c} só vale a partir de ${data.valido_de.split("-").reverse().join("/")}.` };
+  if (data.valido_ate && hoje > data.valido_ate) return { erro: `Cupom ${c} venceu.` };
+  if (data.limite_usos && data.usos >= data.limite_usos) return { erro: `Cupom ${c} já foi usado ${data.usos}x (limite).` };
+  return { id: data.id, codigo: data.codigo, bps: data.percentual_bps, restam: data.limite_usos ? data.limite_usos - data.usos : null };
 }
 
 /**
@@ -57,6 +76,21 @@ export async function registrarVenda(v: NovaVenda): Promise<{ id: string } | { e
     });
   }
 
+  // Desconto geral (cupom ou %) rateado entre os itens.
+  let geral: { tipo: "none" | "cupom" | "percent"; bps: number; cupom_id?: string } = { tipo: "none", bps: 0 };
+  if (v.geral.modo === "cupom") {
+    const c = await buscarCupom(v.geral.codigo);
+    if ("erro" in c) return { erro: c.erro };
+    geral = { tipo: "cupom", bps: c.bps, cupom_id: c.id };
+  } else if (v.geral.modo === "percent" && v.geral.valor.trim()) {
+    const n = Number(v.geral.valor.replace(",", "."));
+    if (!Number.isFinite(n) || n <= 0 || n > 100) return { erro: "Desconto geral inválido (0 a 100%)." };
+    geral = { tipo: "percent", bps: Math.round(n * 100) };
+  }
+  const soma = itens.reduce((s, i) => s + i.total_cents, 0);
+  const partes = ratear(itens.map((i) => i.total_cents), descontoGeral(soma, geral.bps));
+  const itensComRateio = itens.map((i, k) => ({ ...i, desconto_geral_cents: partes[k] ?? 0 }));
+
   const { data, error } = await supabase.rpc("registrar_venda", {
     p: {
       cliente_id: v.cliente_id || null,
@@ -64,7 +98,8 @@ export async function registrarVenda(v: NovaVenda): Promise<{ id: string } | { e
       pagamento: v.pagamento,
       vencimento: v.pagamento === "fiado" ? v.vencimento || null : null,
       observacoes: v.observacoes.trim() || null,
-      itens,
+      desconto_geral: geral,
+      itens: itensComRateio,
     },
   });
   if (error) return { erro: error.message };
