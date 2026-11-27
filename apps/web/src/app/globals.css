@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* Tokens do tema. Escuro por padrão; claro quando o sistema pedir. */
+:root {
+  --bg: #0b0d10;
+  --panel: #111418;
+  --card: #151a1f;
+  --hover: #1c2228;
+  --line: #232a31;
+  --fg: #e8ecef;
+  --muted: #9aa5ae;
+  --faint: #5d6872;
+  --accent: #34d399;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --card: #ffffff;
+    --hover: #eef1f4;
+    --line: #e3e7eb;
+    --fg: #14181c;
+    --muted: #5b6670;
+    --faint: #9aa4ad;
+    --accent: #059669;
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
