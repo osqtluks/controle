@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatBRL, formatBps, margemBps, parseBRL } from "@ct/core";
+import { formatBps, formatLucro, margemBps, parseBRL } from "@ct/core";
 import { Input } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 
@@ -63,8 +63,8 @@ export function CamposPreco({ iniciais, compacto }: { iniciais: PrecosIniciais; 
                   onChange={(e) => f.set(e.target.value)}
                 />
                 {!compacto && lucro !== null && (
-                  <span className={cn("block text-[11px]", lucro < 0 ? "text-red-400" : "text-emerald-400")}>
-                    +{formatBRL(lucro)}/g{margem !== null ? ` · ${formatBps(margem)}` : ""}
+                  <span className={cn("block text-[11px]", (lucro > 0 ? "text-emerald-400" : lucro < 0 ? "text-red-400" : "text-muted"))}>
+                    {formatLucro(lucro)}/g{lucro < 0 ? " (prejuízo)" : ""}{margem !== null ? ` · ${formatBps(margem)}` : ""}
                   </span>
                 )}
               </label>

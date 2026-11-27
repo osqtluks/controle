@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
-import { FAIXAS, formatBRL, formatBps, margemBps, precosEfetivos, type TabelaPreco } from "@ct/core";
+import { FAIXAS, formatBRL, formatBps, formatLucro, margemBps, precosEfetivos, type TabelaPreco } from "@ct/core";
 import { Botao, Erro } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { atualizarPrecos, type EstadoForm } from "../acoes";
@@ -50,8 +50,8 @@ export function EditarPrecos({ id, tabela, custo }: { id: string; tabela: Tabela
               <div className="text-[11px] text-faint">Vendo {f.rotulo}</div>
               <div className="text-base font-semibold tabular-nums">{formatBRL(v)}</div>
               {lucro !== null && (
-                <div className={cn("text-[11px] tabular-nums", lucro < 0 ? "text-red-400" : "text-emerald-400")}>
-                  +{formatBRL(lucro)}
+                <div className={cn("text-[11px] tabular-nums", (lucro > 0 ? "text-emerald-400" : lucro < 0 ? "text-red-400" : "text-muted"))}>
+                  {formatLucro(lucro)}{lucro < 0 ? " prejuízo" : ""}
                   {margem !== null && <span className="text-faint"> · {formatBps(margem)}</span>}
                 </div>
               )}

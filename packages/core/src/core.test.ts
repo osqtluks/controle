@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatBRL,
+  formatLucro,
   formatGrams,
   parseBRL,
   parseGrams,
@@ -18,6 +19,9 @@ describe("dinheiro", () => {
     expect(parseBRL("R$ 1.043,75")).toBe(104375);
     expect(parseBRL("43.75")).toBe(4375);
     expect(parseBRL("abc")).toBeNull();
+    expect(formatLucro(500)).toBe("+R$ 5,00");
+    expect(formatLucro(-500)).toBe("−R$ 5,00");
+    expect(formatLucro(0)).toBe("R$ 0,00");
   });
 });
 

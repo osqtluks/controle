@@ -16,7 +16,13 @@ export function formatBRL(cents: Cents): string {
   return brl.format(cents / 100).replace(/ /g, " ");
 }
 
-/** "43,75" | "R$ 1.043,75" | "43.75" → 4375. Retorna null se inválido. */
+/** Lucro/prejuízo com sinal único: +R$ 5,00 · −R$ 5,00 · R$ 0,00 */
+export function formatLucro(cents: Cents): string {
+  if (cents === 0) return formatBRL(0);
+  return `${cents > 0 ? "+" : "−"}${formatBRL(Math.abs(cents))}`;
+}
+
+/** "43,75" |"R$ 1.043,75" | "43.75" → 4375. Retorna null se inválido. */
 export function parseBRL(texto: string): Cents | null {
   let s = texto.replace(/R\$|\s/g, "");
   if (!s) return null;

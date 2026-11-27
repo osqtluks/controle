@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CalendarClock, ImageOff } from "lucide-react";
-import { custoPorGrama, formatBRL, formatBps, margemBps, priceFor } from "@ct/core";
+import { custoPorGrama, formatBRL, formatBps, formatLucro, margemBps, priceFor } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
 import { diasAte, formatData } from "@/lib/datas";
 import { cn } from "@/lib/cn";
@@ -70,7 +70,7 @@ export function ProdutoCard({ p }: { p: ProdutoCardDados }) {
         <div className="border-x border-line px-2 py-2">
           <dt className="text-faint">Lucro/g</dt>
           <dd className={cn("tabular-nums", margem !== null && margem < 0 ? "text-red-400" : "text-muted")}>
-            {custoG !== null ? `${formatBRL(p.preco_cents_por_grama - custoG)}` : "—"}
+            {custoG !== null ? formatLucro(p.preco_cents_por_grama - custoG) : "—"}
             {margem !== null && <span className="ml-1 text-faint">({formatBps(margem)})</span>}
           </dd>
         </div>
