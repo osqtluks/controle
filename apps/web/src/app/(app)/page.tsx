@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { formatBRL, formatLucro, NIVEIS_DE_ALERTA, stockLevel, stockPercent } from "@ct/core";
 import { StockBar } from "@/components/stock-bar";
@@ -67,6 +68,7 @@ async function Alertas() {
 }
 
 async function ResumoVendas() {
+  await connection(); // "hoje" depende da hora da requisição, não do build
   const hoje = hojeISO();
   const vendas = await totaisDesde(`${hoje.slice(0, 7)}-01T00:00:00-03:00`);
   const doDia = vendas.filter((v) => new Date(v.data).toLocaleDateString("en-CA", { timeZone: FUSO }) === hoje);

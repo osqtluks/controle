@@ -30,7 +30,7 @@ Sistema pessoal (1 usuário) de vendas, estoque, contas a pagar/receber, calend�
 
 ## Comandos (na raiz)
 - `npm run dev` — sobe o app
-- `npm run check` — typecheck + lint + testes (rodar antes de todo commit)
+- `npm run check` — typecheck + lint + testes + build (rodar antes de todo commit; o build pega erros de pré-render que o resto não pega)
 - `npm test` — só os testes do core
 
 ## Fases

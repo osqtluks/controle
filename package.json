@@ -14,7 +14,7 @@
     "lint": "npm run lint -w web",
     "typecheck": "tsc --noEmit -p packages/core && npm exec -w web -- next typegen && tsc --noEmit -p apps/web",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "devDependencies": {
     "supabase": "^3.4.0",
