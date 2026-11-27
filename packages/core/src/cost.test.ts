@@ -41,19 +41,26 @@ describe("ordenar", () => {
   });
 });
 
-import { faixaPara, precoPorGramaPara, precosEfetivos } from "./index";
+import { faixaPara, precoPorGramaPara, validarFaixas } from "./index";
 
-describe("faixas de preço", () => {
-  const t = { base: 1500, de10: 1300, de30: null };
-  it("escolhe a faixa pela quantidade", () => {
-    expect(faixaPara(35)).toBe("base");
-    expect(faixaPara(100)).toBe("de10");
-    expect(faixaPara(299)).toBe("de10");
-    expect(faixaPara(300)).toBe("de30");
+describe("faixas de preço por produto", () => {
+  const t = [
+    { minDg: 50, precoCents: 9000 },
+    { minDg: 100, precoCents: 8500 },
+    { minDg: 200, precoCents: 8000 },
+    { minDg: 500, precoCents: 7000 },
+  ]; // 5 · 10 · 20 · 50 g
+  it("escolhe a maior faixa que cabe; abaixo de todas, a primeira", () => {
+    expect(faixaPara(30, t).minDg).toBe(50);
+    expect(faixaPara(150, t).minDg).toBe(100);
+    expect(faixaPara(200, t).minDg).toBe(200);
+    expect(precoPorGramaPara(1000, t)).toBe(7000);
   });
-  it("faixa vazia herda a de baixo", () => {
-    expect(precosEfetivos(t)).toEqual({ base: 1500, de10: 1300, de30: 1300 });
-    expect(precoPorGramaPara(50, t)).toBe(1500);
-    expect(precoPorGramaPara(400, t)).toBe(1300);
+  it("não depende da ordem e valida", () => {
+    expect(faixaPara(250, [...t].reverse()).minDg).toBe(200);
+    expect(validarFaixas(t)).toBeNull();
+    expect(validarFaixas([])).not.toBeNull();
+    expect(validarFaixas([{ minDg: 30, precoCents: 1 }, { minDg: 30, precoCents: 2 }])).not.toBeNull();
+    expect(validarFaixas(Array.from({ length: 7 }, (_, i) => ({ minDg: (i + 1) * 10, precoCents: 1 })))).not.toBeNull();
   });
 });

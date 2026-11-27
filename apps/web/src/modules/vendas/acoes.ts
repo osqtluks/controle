@@ -44,7 +44,7 @@ export async function registrarVenda(v: NovaVenda): Promise<{ id: string } | { e
   const ids = [...new Set(v.itens.map((i) => i.produto_id))];
   const { data: produtos, error: e1 } = await supabase
     .from("produtos")
-    .select("id, nome, preco_cents_por_grama, preco_10g_cents_por_grama, preco_30g_cents_por_grama")
+    .select("id, nome, faixas")
     .in("id", ids);
   if (e1) return { erro: e1.message };
   const porId = new Map(produtos.map((p) => [p.id as string, p]));
@@ -59,14 +59,14 @@ export async function registrarVenda(v: NovaVenda): Promise<{ id: string } | { e
     if (!desconto) return { erro: `Desconto inválido em "${p.nome}".` };
     const c = calcularItem(
       dg,
-      { base: p.preco_cents_por_grama, de10: p.preco_10g_cents_por_grama, de30: p.preco_30g_cents_por_grama },
+      (p.faixas as { min_dg: number; preco_cents: number }[]).map((f) => ({ minDg: f.min_dg, precoCents: f.preco_cents })),
       desconto,
     );
     const d = descontoParaBanco(desconto);
     itens.push({
       produto_id: p.id,
       quantidade_dg: dg,
-      faixa: c.faixa,
+      faixa: String(c.faixaMinDg),
       preco_lista_cents_por_grama: c.precoListaPorGrama,
       desconto_tipo: d.tipo,
       desconto_valor: d.valor,

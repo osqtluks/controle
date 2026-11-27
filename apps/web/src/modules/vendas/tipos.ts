@@ -1,5 +1,5 @@
 import type { Discount } from "@ct/core";
-import { parseBRL } from "@ct/core";
+import { parseBRL, rotuloFaixa } from "@ct/core";
 
 export interface Venda {
   id: string;
@@ -26,7 +26,8 @@ export interface VendaItem {
   id: string;
   produto_id: string;
   quantidade_dg: number;
-  faixa: "base" | "de10" | "de30";
+  /** "a partir de" em decigramas, como texto ("30", "100"…) */
+  faixa: string;
   preco_lista_cents_por_grama: number;
   desconto_tipo: Discount["kind"];
   desconto_valor: number;
@@ -71,4 +72,10 @@ export function descreverDesconto(tipo: TipoDesconto, valor: number): string {
   return "";
 }
 
-export const ROTULO_FAIXA: Record<VendaItem["faixa"], string> = { base: "3 g+", de10: "10 g+", de30: "30 g+" };
+const LEGADO: Record<string, number> = { base: 30, de10: 100, de30: 300 };
+
+/** Rótulo da faixa usada no item ("10 g+"). */
+export function rotuloDaFaixa(faixa: string): string {
+  const dg = LEGADO[faixa] ?? Number(faixa);
+  return Number.isFinite(dg) ? rotuloFaixa(dg) : faixa;
+}

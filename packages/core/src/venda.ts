@@ -1,10 +1,10 @@
 import type { Cents } from "./money";
 import { priceFor, type Dg } from "./grams";
 import { priceLine, type Discount } from "./discount";
-import { faixaPara, precosEfetivos, type FaixaId, type TabelaPreco } from "./tiers";
+import { faixaPara, type TabelaPreco } from "./tiers";
 
 export interface ItemCalculado {
-  faixa: FaixaId;
+  faixaMinDg: Dg; // "a partir de" da faixa aplicada
   precoListaPorGrama: Cents; // preço da faixa, antes do desconto
   subtotalCents: Cents;
   descontoCents: Cents;
@@ -13,10 +13,10 @@ export interface ItemCalculado {
 
 /** Preço de uma linha da venda: escolhe a faixa pela quantidade e aplica o desconto. */
 export function calcularItem(dg: Dg, tabela: TabelaPreco, desconto: Discount): ItemCalculado {
-  const faixa = faixaPara(dg);
-  const precoListaPorGrama = precosEfetivos(tabela)[faixa];
+  const f = faixaPara(dg, tabela);
+  const precoListaPorGrama = f.precoCents;
   const l = priceLine(dg, precoListaPorGrama, desconto);
-  return { faixa, precoListaPorGrama, subtotalCents: l.subtotalCents, descontoCents: l.discountCents, totalCents: l.totalCents };
+  return { faixaMinDg: f.minDg, precoListaPorGrama, subtotalCents: l.subtotalCents, descontoCents: l.discountCents, totalCents: l.totalCents };
 }
 
 /** Desconto no formato gravado no banco: tipo + valor inteiro (bps, centavos ou centavos/g). */
@@ -51,8 +51,7 @@ export function desempenho(faturado: Cents, custoVendido: Cents, investido: Cent
 
 /** Quanto o estoque restante pode render: tudo na faixa mais barata até tudo na mais cara. */
 export function potencialDoEstoque(dg: Dg, tabela: TabelaPreco): { minCents: Cents; maxCents: Cents } {
-  const p = precosEfetivos(tabela);
-  const precos = [p.base, p.de10, p.de30];
+  const precos = tabela.map((f) => f.precoCents);
   return { minCents: priceFor(dg, Math.min(...precos)), maxCents: priceFor(dg, Math.max(...precos)) };
 }
 

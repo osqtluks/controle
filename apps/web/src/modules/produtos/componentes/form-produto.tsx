@@ -7,6 +7,7 @@ import { Botao, Campo, Erro, Input, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { comprimirImagem } from "@/lib/imagem";
 import { CamposPreco } from "./campos-preco";
+import { tabelaDe } from "../tipos";
 import { SeletorFornecedor, type OpcaoFornecedor } from "@/modules/pessoas/componentes/seletor-fornecedor";
 import { ReguaNiveis, errosDeNivel } from "./regua-niveis";
 import { salvarProduto, type EstadoForm } from "../acoes";
@@ -111,9 +112,7 @@ export function FormProduto({
         <CamposPreco
           iniciais={{
             custo: produto?.custo_ref_cents_por_grama ?? null,
-            base: produto?.preco_cents_por_grama ?? null,
-            de10: produto?.preco_10g_cents_por_grama ?? null,
-            de30: produto?.preco_30g_cents_por_grama ?? null,
+            faixas: produto ? tabelaDe(produto) : [{ minDg: 30, precoCents: 0 }, { minDg: 100, precoCents: 0 }, { minDg: 300, precoCents: 0 }],
           }}
         />
       </section>

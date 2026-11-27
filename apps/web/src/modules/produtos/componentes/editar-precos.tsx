@@ -2,56 +2,69 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
-import { FAIXAS, formatBRL, formatBps, formatLucro, margemBps, precosEfetivos, type TabelaPreco } from "@ct/core";
+import { formatBRL, formatBps, formatLucro, margemBps, ordenarFaixas, rotuloFaixa, type TabelaPreco } from "@ct/core";
 import { Botao, Erro } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { atualizarPrecos, type EstadoForm } from "../acoes";
 import { CamposPreco } from "./campos-preco";
 
-/** Bloco de preços na tela do produto, com edição rápida no lugar. */
-export function EditarPrecos({ id, tabela, custo }: { id: string; tabela: TabelaPreco; custo: number | null }) {
-  const [aberto, setAberto] = useState(false);
+/** Bloco de preços na tela do produto (e no Menu), com edição rápida no lugar. */
+export function EditarPrecos({
+  id,
+  tabela,
+  custo,
+  inicialAberto = false,
+}: {
+  id: string;
+  tabela: TabelaPreco;
+  custo: number | null;
+  inicialAberto?: boolean;
+}) {
+  const [aberto, setAberto] = useState(inicialAberto);
   const [estado, acao, enviando] = useActionState<EstadoForm, FormData>(atualizarPrecos, {});
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fecha o editor depois de salvar
-    if (estado.ok) setAberto(false);
-  }, [estado]);
+    if (estado.ok && !inicialAberto) setAberto(false);
+  }, [estado, inicialAberto]);
 
   if (aberto)
     return (
       <form action={acao} className="space-y-3 rounded-lg border border-accent/40 bg-bg/60 p-3">
         <input type="hidden" name="id" value={id} />
-        <CamposPreco iniciais={{ custo, base: tabela.base, de10: tabela.de10, de30: tabela.de30 }} />
+        <CamposPreco iniciais={{ custo, faixas: tabela }} />
         <Erro>{estado.erro}</Erro>
+        {estado.ok && inicialAberto && <p className="text-xs text-emerald-400">Salvo.</p>}
         <div className="flex gap-2">
           <Botao disabled={enviando}>{enviando ? "Salvando…" : "Salvar preços"}</Botao>
-          <Botao type="button" variante="secundario" onClick={() => setAberto(false)}>
-            Cancelar
-          </Botao>
+          {!inicialAberto && (
+            <Botao type="button" variante="secundario" onClick={() => setAberto(false)}>
+              Cancelar
+            </Botao>
+          )}
         </div>
       </form>
     );
 
-  const ef = precosEfetivos(tabela);
+  const faixas = ordenarFaixas(tabela);
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="rounded-lg bg-bg/60 p-3">
-          <div className="text-[11px] text-faint">Pago/g</div>
-          <div className="text-base font-semibold tabular-nums">{custo !== null ? formatBRL(custo) : "—"}</div>
+          <div className="text-sm font-medium text-muted">Pago/g</div>
+          <div className="text-xl font-semibold tabular-nums">{custo !== null ? formatBRL(custo) : "—"}</div>
         </div>
-        {FAIXAS.map((f) => {
-          const v = ef[f.id];
-          const lucro = custo !== null ? v - custo : null;
-          const margem = custo !== null ? margemBps(v, custo) : null;
+        {faixas.map((f) => {
+          const lucro = custo !== null ? f.precoCents - custo : null;
+          const margem = custo !== null ? margemBps(f.precoCents, custo) : null;
           return (
-            <div key={f.id} className="rounded-lg bg-bg/60 p-3">
-              <div className="text-[11px] text-faint">Vendo {f.rotulo}</div>
-              <div className="text-base font-semibold tabular-nums">{formatBRL(v)}</div>
+            <div key={f.minDg} className="rounded-lg bg-bg/60 p-3">
+              <div className="text-sm font-semibold text-fg">Vendo {rotuloFaixa(f.minDg)}</div>
+              <div className="text-xl font-semibold tabular-nums">{formatBRL(f.precoCents)}</div>
               {lucro !== null && (
-                <div className={cn("text-[11px] tabular-nums", (lucro > 0 ? "text-emerald-400" : lucro < 0 ? "text-red-400" : "text-muted"))}>
-                  {formatLucro(lucro)}{lucro < 0 ? " prejuízo" : ""}
+                <div className={cn("text-xs tabular-nums", lucro > 0 ? "text-emerald-400" : lucro < 0 ? "text-red-400" : "text-muted")}>
+                  {formatLucro(lucro)}
+                  {lucro < 0 ? " prejuízo" : ""}
                   {margem !== null && <span className="text-faint"> · {formatBps(margem)}</span>}
                 </div>
               )}
@@ -64,7 +77,7 @@ export function EditarPrecos({ id, tabela, custo }: { id: string; tabela: Tabela
         onClick={() => setAberto(true)}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-line py-2 text-xs text-muted hover:bg-hover hover:text-fg"
       >
-        <Pencil size={13} /> Ajustar preços
+        <Pencil size={13} /> Ajustar preços e faixas
       </button>
     </div>
   );

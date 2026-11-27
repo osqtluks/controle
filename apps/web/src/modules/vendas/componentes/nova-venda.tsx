@@ -8,14 +8,14 @@ import {
   calcularItem,
   consumirFifo,
   descontoGeral,
-  FAIXAS,
   formatBps,
   formatBRL,
   formatGrams,
   formatLucro,
   parseGrams,
-  precosEfetivos,
+  ordenarFaixas,
   ratear,
+  rotuloFaixa,
   type ItemCalculado,
   type SaldoDeLote,
 } from "@ct/core";
@@ -30,7 +30,6 @@ import {
   descreverDesconto,
   lerDesconto,
   ROTULO_DESCONTO,
-  ROTULO_FAIXA,
   type DescontoDigitado,
   type TipoDesconto,
 } from "../tipos";
@@ -90,7 +89,7 @@ function LinhaItem({
   mudar: (l: Linha) => void;
   remover: () => void;
 }) {
-  const ef = precosEfetivos(tabelaDe(p));
+  const faixas = ordenarFaixas(tabelaDe(p));
   const fat = c?.ok ? c.totalCents - rateio : 0;
   const lucro = c?.ok ? fat - c.custo : 0;
 
@@ -101,7 +100,7 @@ function LinhaItem({
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium">{p.nome}</div>
           <div className="text-[11px] text-muted">
-            Em estoque: {formatGrams(p.estoque_dg)} · {FAIXAS.map((f) => `${f.rotulo} ${formatBRL(ef[f.id])}`).join(" · ")}
+            Em estoque: {formatGrams(p.estoque_dg)} · {faixas.map((f) => `${rotuloFaixa(f.minDg)} ${formatBRL(f.precoCents)}`).join(" · ")}
           </div>
         </div>
         <button type="button" onClick={remover} aria-label="Tirar da venda" className="p-1 text-faint hover:text-red-400">
@@ -161,7 +160,7 @@ function LinhaItem({
         <div className="space-y-1.5 rounded-lg bg-bg/60 px-3 py-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
             <span>
-              Faixa <b className="text-fg">{ROTULO_FAIXA[c.faixa]}</b> · {formatBRL(c.precoListaPorGrama)}/g ·{" "}
+              Faixa <b className="text-fg">{rotuloFaixa(c.faixaMinDg)}</b> · {formatBRL(c.precoListaPorGrama)}/g ·{" "}
               {formatBRL(c.subtotalCents)}
             </span>
             {c.descontoCents > 0 && <span className="text-orange-300">−{formatBRL(c.descontoCents)}</span>}

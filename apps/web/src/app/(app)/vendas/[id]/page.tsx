@@ -9,7 +9,7 @@ import { formatData, formatDataHora } from "@/lib/datas";
 import { obterVenda } from "@/modules/vendas/dados";
 import { contaDaVenda } from "@/modules/contas/dados";
 import { BotaoCancelarVenda, BotaoReativarVenda } from "@/modules/vendas/componentes/botoes-venda";
-import { descreverDesconto, ROTULO_FAIXA } from "@/modules/vendas/tipos";
+import { descreverDesconto, rotuloDaFaixa } from "@/modules/vendas/tipos";
 
 export const metadata: Metadata = { title: "Venda" };
 
@@ -80,7 +80,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
                     </td>
                     <td className="px-2 py-2 tabular-nums">{formatGrams(i.quantidade_dg)}</td>
                     <td className="px-2 py-2 text-xs">
-                      {ROTULO_FAIXA[i.faixa]} · {formatBRL(i.preco_lista_cents_por_grama)}/g
+                      {rotuloDaFaixa(i.faixa)} · {formatBRL(i.preco_lista_cents_por_grama)}/g
                     </td>
                     <td className="px-2 py-2 text-xs text-orange-300">
                       {i.desconto_cents > 0 ? `${descreverDesconto(i.desconto_tipo, i.desconto_valor)} (−${formatBRL(i.desconto_cents)})` : "—"}

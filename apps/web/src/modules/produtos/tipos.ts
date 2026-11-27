@@ -10,8 +10,8 @@ export interface ProdutoEstoque {
   preco_cents_por_grama: number;
   custo_ref_cents_por_grama: number | null;
   fornecedor_id: string | null;
-  preco_10g_cents_por_grama: number | null;
-  preco_30g_cents_por_grama: number | null;
+  /** Faixas de preço (1 a 6), em ordem: a partir de min_dg, preco_cents por grama. */
+  faixas: { min_dg: number; preco_cents: number }[];
   lim_acabou_dg: number;
   lim_muito_baixo_dg: number;
   lim_acabando_dg: number;
@@ -63,6 +63,6 @@ export function limitesDe(p: ProdutoEstoque): StockThresholds {
   };
 }
 
-export function tabelaDe(p: Pick<ProdutoEstoque, "preco_cents_por_grama" | "preco_10g_cents_por_grama" | "preco_30g_cents_por_grama">): TabelaPreco {
-  return { base: p.preco_cents_por_grama, de10: p.preco_10g_cents_por_grama, de30: p.preco_30g_cents_por_grama };
+export function tabelaDe(p: Pick<ProdutoEstoque, "faixas">): TabelaPreco {
+  return (p.faixas ?? []).map((f) => ({ minDg: f.min_dg, precoCents: f.preco_cents }));
 }

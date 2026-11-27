@@ -9,6 +9,12 @@ const vazio = (v: unknown) => v === null || v === undefined || v === "";
 const dinheiro: Fmt = (v) => (vazio(v) ? "vazio" : formatBRL(Number(v)));
 const gramas: Fmt = (v) => formatGrams(Number(v));
 const textoFmt: Fmt = (v) => (vazio(v) ? "vazio" : `"${String(v)}"`);
+const faixasFmt: Fmt = (v) =>
+  Array.isArray(v) && v.length
+    ? (v as { min_dg: number; preco_cents: number }[])
+        .map((f) => `${formatGrams(f.min_dg)}+ ${formatBRL(f.preco_cents)}`)
+        .join(" · ")
+    : "nenhuma";
 const pessoa: Fmt = (v, n) => (vazio(v) ? "nenhum" : (n[String(v)] ?? "outro fornecedor"));
 
 /** Campos do produto que aparecem no histórico, com nome amigável e formato. */
@@ -17,7 +23,7 @@ const CAMPOS_PRODUTO: [string, string, Fmt][] = [
   ["categoria", "a categoria", textoFmt],
   ["fornecedor_id", "o fornecedor", pessoa],
   ["custo_ref_cents_por_grama", "o valor pago por grama", dinheiro],
-  ["preco_cents_por_grama", "o valor de 3 g+", dinheiro],
+  ["faixas", "as faixas de preço", faixasFmt],
   ["preco_10g_cents_por_grama", "o valor de 10 g+", dinheiro],
   ["preco_30g_cents_por_grama", "o valor de 30 g+", dinheiro],
   ["lim_cheio_dg", "o nível cheio", gramas],

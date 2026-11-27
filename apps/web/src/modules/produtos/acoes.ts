@@ -2,7 +2,15 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { custoPorGrama, parseBRL, parseGrams, validateThresholds } from "@ct/core";
+import {
+  custoPorGrama,
+  ordenarFaixas,
+  parseBRL,
+  parseGrams,
+  validarFaixas,
+  validateThresholds,
+  type TabelaPreco,
+} from "@ct/core";
 import { createClient } from "@/lib/supabase/server";
 
 export type EstadoForm = { erro?: string; ok?: boolean };
@@ -24,25 +32,31 @@ async function enviarFoto(foto: File, produtoId: string): Promise<string> {
   return path;
 }
 
-/** Lê os preços por grama: pago (opcional), 3 g+ (obrigatório), 10 g+ e 30 g+ (opcionais). */
+/** Lê "pago por grama" (opcional) e as faixas de venda (JSON [{g, preco}] do formulário). */
 function lerPrecos(f: FormData) {
-  const opcional = (k: string, nome: string) => {
-    const t = String(f.get(k) ?? "").trim();
-    if (!t) return { v: null };
-    const c = parseBRL(t);
-    return c === null || c < 0 ? { erro: `${nome} inválido. Ex.: 12,50` } : { v: c };
-  };
-  const preco = parseBRL(String(f.get("preco") ?? ""));
-  if (preco === null || preco < 0) return { erro: "Preço de venda (3 g+) inválido. Ex.: 12,50" };
-  const custo = opcional("custo_ref", "Preço pago por grama");
-  const p10 = opcional("preco_10g", "Preço 10 g+");
-  const p30 = opcional("preco_30g", "Preço 30 g+");
-  for (const r of [custo, p10, p30]) if ("erro" in r) return { erro: r.erro! };
+  const custoTxt = String(f.get("custo_ref") ?? "").trim();
+  const custo = custoTxt ? parseBRL(custoTxt) : null;
+  if (custoTxt && (custo === null || custo < 0)) return { erro: "Preço pago por grama inválido. Ex.: 9,80" };
+
+  let brutas: { g: string; preco: string }[];
+  try {
+    brutas = JSON.parse(String(f.get("faixas") ?? "[]"));
+  } catch {
+    return { erro: "Faixas inválidas." };
+  }
+  const faixas: TabelaPreco = [];
+  for (const b of brutas) {
+    const dg = parseGrams(String(b.g ?? ""));
+    const preco = parseBRL(String(b.preco ?? ""));
+    if (!dg) return { erro: `Quantidade de faixa inválida: "${b.g}". Ex.: 3 ou 2,5` };
+    if (preco === null || preco < 0) return { erro: `Preço inválido na faixa de ${b.g} g.` };
+    faixas.push({ minDg: dg, precoCents: preco });
+  }
+  const erroFaixas = validarFaixas(faixas);
+  if (erroFaixas) return { erro: erroFaixas };
   return {
-    preco_cents_por_grama: preco,
-    custo_ref_cents_por_grama: custo.v ?? null,
-    preco_10g_cents_por_grama: p10.v ?? null,
-    preco_30g_cents_por_grama: p30.v ?? null,
+    custo_ref_cents_por_grama: custo,
+    faixas: ordenarFaixas(faixas).map((x) => ({ min_dg: x.minDg, preco_cents: x.precoCents })),
   };
 }
 
