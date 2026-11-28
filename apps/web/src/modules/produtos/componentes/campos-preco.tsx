@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { BookmarkPlus, Plus, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   formatBps,
   formatLucro,
@@ -14,6 +15,8 @@ import {
 } from "@ct/core";
 import { Input } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
+import { excluirModelo, listarModelos, recriarModelo, salvarModelo } from "../acoes";
+import type { ModeloFaixas } from "../tipos";
 
 export const centsParaTexto = (c: number | null | undefined) =>
   c === null || c === undefined ? "" : (c / 100).toFixed(2).replace(".", ",");
@@ -47,6 +50,44 @@ export function CamposPreco({ iniciais }: { iniciais: PrecosIniciais }) {
   );
 
   const c = parseBRL(custo);
+  const [modelos, setModelos] = useState<ModeloFaixas[]>([]);
+  const [nomeModelo, setNomeModelo] = useState<string | null>(null);
+  const [salvando, iniciar] = useTransition();
+
+  useEffect(() => {
+    listarModelos().then(setModelos).catch(() => {});
+  }, []);
+
+  function aplicarModelo(m: ModeloFaixas) {
+    setLinhas(m.faixas.map((f, i) => ({ chave: seq + i, g: dgParaTexto(f.min_dg), preco: centsParaTexto(f.preco_cents) })));
+    setSeq((s) => s + m.faixas.length);
+    toast(`Modelo "${m.nome}" aplicado. Confira e salve.`);
+  }
+
+  function apagarModelo(m: ModeloFaixas) {
+    setModelos((ms) => ms.filter((x) => x.id !== m.id));
+    excluirModelo(m.id)
+      .then(() =>
+        toast(`Modelo "${m.nome}" excluído.`, {
+          action: {
+            label: "Desfazer",
+            onClick: () => recriarModelo(m).then(() => setModelos((ms) => [...ms, m].sort((a, b) => a.nome.localeCompare(b.nome)))),
+          },
+        }),
+      )
+      .catch((e: Error) => toast.error(e.message));
+  }
+
+  function guardarModelo() {
+    if (!nomeModelo?.trim()) return;
+    iniciar(async () => {
+      const r = await salvarModelo(nomeModelo, json);
+      if ("erro" in r) return void toast.error(r.erro);
+      setModelos((ms) => [...ms, r].sort((a, b) => a.nome.localeCompare(b.nome)));
+      setNomeModelo(null);
+      toast.success(`Modelo "${r.nome}" salvo. Use em outros produtos.`);
+    });
+  }
 
   function aplicarPreset(gs: number[]) {
     // Mantém os preços que já existiam nas mesmas posições.
@@ -90,6 +131,22 @@ export function CamposPreco({ iniciais }: { iniciais: PrecosIniciais }) {
             ))}
           </div>
         </div>
+
+        {modelos.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[11px] text-faint">Minhas tabelas:</span>
+            {modelos.map((m) => (
+              <span key={m.id} className="inline-flex items-center rounded-md border border-accent/40 bg-accent/10 text-[11px] text-accent">
+                <button type="button" onClick={() => aplicarModelo(m)} className="px-2 py-1" title="Aplicar faixas e preços">
+                  {m.nome}
+                </button>
+                <button type="button" onClick={() => apagarModelo(m)} className="pr-1.5 text-accent/60 hover:text-red-400" aria-label={`Excluir modelo ${m.nome}`}>
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
         {linhas.map((l, i) => {
           const dg = parseGrams(l.g);
@@ -150,6 +207,43 @@ export function CamposPreco({ iniciais }: { iniciais: PrecosIniciais }) {
           >
             <Plus size={14} /> Adicionar faixa ({linhas.length}/{MAX_FAIXAS})
           </button>
+        )}
+        {nomeModelo === null ? (
+          <button
+            type="button"
+            onClick={() => setNomeModelo("")}
+            className="ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs text-muted hover:text-accent"
+          >
+            <BookmarkPlus size={14} /> Salvar como modelo
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <Input
+              autoFocus
+              value={nomeModelo}
+              onChange={(e) => setNomeModelo(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  guardarModelo();
+                }
+              }}
+              placeholder='Nome do modelo (ex.: "Tabela premium")'
+              maxLength={40}
+              className="py-1.5"
+            />
+            <button
+              type="button"
+              disabled={salvando || !nomeModelo.trim()}
+              onClick={guardarModelo}
+              className="shrink-0 rounded-lg bg-accent px-3 text-xs font-semibold text-black disabled:opacity-50"
+            >
+              Salvar
+            </button>
+            <button type="button" onClick={() => setNomeModelo(null)} className="px-2 text-xs text-muted">
+              ✕
+            </button>
+          </div>
         )}
         {repetidas.size > 0 && <p className="text-xs text-red-400">Duas faixas com a mesma quantidade.</p>}
         <p className="text-[11px] text-faint">Quem leva menos que a primeira faixa paga o preço da primeira.</p>

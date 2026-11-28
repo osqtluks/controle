@@ -12,6 +12,9 @@ export interface ProdutoEstoque {
   fornecedor_id: string | null;
   /** Faixas de preço (1 a 6), em ordem: a partir de min_dg, preco_cents por grama. */
   faixas: { min_dg: number; preco_cents: number }[];
+  menu_estilo: EstiloMenu;
+  menu_destaque_dg: number | null;
+  menu_selo: string | null;
   lim_acabou_dg: number;
   lim_muito_baixo_dg: number;
   lim_acabando_dg: number;
@@ -65,4 +68,12 @@ export function limitesDe(p: ProdutoEstoque): StockThresholds {
 
 export function tabelaDe(p: Pick<ProdutoEstoque, "faixas">): TabelaPreco {
   return (p.faixas ?? []).map((f) => ({ minDg: f.min_dg, precoCents: f.preco_cents }));
+}
+
+export type EstiloMenu = "simples" | "top" | "premium";
+
+export interface ModeloFaixas {
+  id: string;
+  nome: string;
+  faixas: { min_dg: number; preco_cents: number }[];
 }

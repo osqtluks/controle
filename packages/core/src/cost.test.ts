@@ -41,7 +41,7 @@ describe("ordenar", () => {
   });
 });
 
-import { faixaPara, precoPorGramaPara, validarFaixas } from "./index";
+import { descontoDaFaixaBps, faixaPara, precoPorGramaPara, validarFaixas } from "./index";
 
 describe("faixas de preço por produto", () => {
   const t = [
@@ -62,5 +62,9 @@ describe("faixas de preço por produto", () => {
     expect(validarFaixas([])).not.toBeNull();
     expect(validarFaixas([{ minDg: 30, precoCents: 1 }, { minDg: 30, precoCents: 2 }])).not.toBeNull();
     expect(validarFaixas(Array.from({ length: 7 }, (_, i) => ({ minDg: (i + 1) * 10, precoCents: 1 })))).not.toBeNull();
+  });
+  it("desconto de cada faixa em relação à primeira", () => {
+    expect(descontoDaFaixaBps(t, t[0]!)).toBe(0);
+    expect(descontoDaFaixaBps(t, t[3]!)).toBe(2222); // 90 → 70 = 22,2%
   });
 });

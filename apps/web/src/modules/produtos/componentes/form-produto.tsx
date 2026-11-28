@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { ImagePlus } from "lucide-react";
-import { dgToGrams, formatBRL, type StockThresholds } from "@ct/core";
+import { dgToGrams, FAIXAS_PADRAO_G, formatBRL, type StockThresholds } from "@ct/core";
 import { Botao, Campo, Erro, Input, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { comprimirImagem } from "@/lib/imagem";
@@ -112,7 +112,7 @@ export function FormProduto({
         <CamposPreco
           iniciais={{
             custo: produto?.custo_ref_cents_por_grama ?? null,
-            faixas: produto ? tabelaDe(produto) : [{ minDg: 30, precoCents: 0 }, { minDg: 100, precoCents: 0 }, { minDg: 300, precoCents: 0 }],
+            faixas: produto ? tabelaDe(produto) : FAIXAS_PADRAO_G.map((g) => ({ minDg: g * 10, precoCents: 0 })),
           }}
         />
       </section>

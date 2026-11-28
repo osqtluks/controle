@@ -15,13 +15,23 @@ export type TabelaPreco = Faixa[];
 
 export const MAX_FAIXAS = 6;
 
+/** Faixas que todo produto novo já traz (em gramas). */
+export const FAIXAS_PADRAO_G = [3, 6, 12, 15, 20, 25];
+
 /** Atalhos de faixas (em gramas). */
 export const PRESETS_FAIXAS: number[][] = [
-  [3, 10, 30],
-  [5, 10, 20, 50],
+  [3, 6, 12, 15, 20, 25],
+  [1, 3, 6, 9, 12, 15],
   [3, 6, 9, 12, 15],
-  [3, 9, 15, 21],
+  [2, 5, 10, 15, 20, 25],
 ];
+
+/** Desconto da faixa em relação à primeira (a mais cara por grama), em pontos-base. 300 = 3%. */
+export function descontoDaFaixaBps(t: TabelaPreco, f: Faixa): number {
+  const base = ordenarFaixas(t)[0]?.precoCents ?? 0;
+  if (base <= 0 || f.precoCents >= base) return 0;
+  return Math.round(((base - f.precoCents) * 10000) / base);
+}
 
 export function ordenarFaixas(t: TabelaPreco): TabelaPreco {
   return [...t].sort((a, b) => a.minDg - b.minDg);

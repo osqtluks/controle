@@ -12,6 +12,7 @@ import {
   type TabelaPreco,
 } from "@ct/core";
 import { createClient } from "@/lib/supabase/server";
+import type { EstiloMenu, ModeloFaixas } from "./tipos";
 
 export type EstadoForm = { erro?: string; ok?: boolean };
 
@@ -45,7 +46,9 @@ function lerPrecos(f: FormData) {
     return { erro: "Faixas inválidas." };
   }
   const faixas: TabelaPreco = [];
-  for (const b of brutas) {
+  for (const [i, b] of brutas.entries()) {
+    // Faixa sem preço é ignorada (o padrão traz 6, mas dá para preencher só algumas).
+    if (!String(b.preco ?? "").trim() && !(i === brutas.length - 1 && faixas.length === 0)) continue;
     const dg = parseGrams(String(b.g ?? ""));
     const preco = parseBRL(String(b.preco ?? ""));
     if (!dg) return { erro: `Quantidade de faixa inválida: "${b.g}". Ex.: 3 ou 2,5` };
@@ -211,5 +214,52 @@ export async function definirFornecedorLote(loteId: string, fornecedorId: string
   const supabase = await createClient();
   const { error } = await supabase.from("lotes").update({ fornecedor_id: fornecedorId }).eq("id", loteId);
   if (error) throw new Error(`Não foi possível trocar o fornecedor: ${error.message}`);
+  refresh();
+}
+
+// ── Modelos de faixas ("Tabela premium") ──
+
+export async function listarModelos(): Promise<ModeloFaixas[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("modelos_faixas").select("id, nome, faixas").order("nome");
+  return (data ?? []) as ModeloFaixas[];
+}
+
+/** Salva as faixas (com preços) como modelo. `faixasJson` é o mesmo JSON [{g, preco}] do formulário. */
+export async function salvarModelo(nome: string, faixasJson: string): Promise<ModeloFaixas | { erro: string }> {
+  const n = nome.trim();
+  if (!n) return { erro: "Dê um nome ao modelo." };
+  const fd = new FormData();
+  fd.set("faixas", faixasJson);
+  const r = lerPrecos(fd);
+  if ("erro" in r) return { erro: r.erro! };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("modelos_faixas").insert({ nome: n, faixas: r.faixas }).select("id, nome, faixas").single();
+  if (error) return { erro: error.message };
+  return data as ModeloFaixas;
+}
+
+export async function excluirModelo(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("modelos_faixas").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** "Desfazer" da exclusão de modelo. */
+export async function recriarModelo(m: ModeloFaixas) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("modelos_faixas").insert({ id: m.id, nome: m.nome, faixas: m.faixas });
+  if (error) throw new Error(error.message);
+}
+
+// ── Aparência no Menu ──
+
+export async function atualizarMenuProduto(
+  id: string,
+  dados: { menu_estilo?: EstiloMenu; menu_destaque_dg?: number | null; menu_selo?: string | null },
+) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("produtos").update(dados).eq("id", id);
+  if (error) throw new Error(error.message);
   refresh();
 }
