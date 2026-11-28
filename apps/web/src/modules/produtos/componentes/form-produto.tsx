@@ -155,7 +155,7 @@ export function FormProduto({
       </section>
 
       <section className="grid gap-3 rounded-xl border border-line bg-card p-4">
-        <Campo rotulo="Descrição">
+        <Campo rotulo="Descrição" dica="Aparece no Menu. Lá dá para criar descrições vitrine diferentes, sem perder esta.">
           <Textarea name="descricao" defaultValue={produto?.descricao ?? ""} />
         </Campo>
         <Campo rotulo="Observações">

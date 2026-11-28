@@ -14,6 +14,8 @@ export interface NovaVenda {
   itens: { produto_id: string; quantidade: string; desconto: DescontoDigitado }[];
   /** Desconto da venda toda: código de cupom ou % digitada. */
   geral: { modo: "none" } | { modo: "cupom"; codigo: string } | { modo: "percent"; valor: string };
+  /** Por que o desconto geral (ex.: "bônus de indicação"). */
+  motivoDesconto?: string | null;
 }
 
 export type CupomValido = { id: string; codigo: string; bps: number; restam: number | null };
@@ -99,6 +101,7 @@ export async function registrarVenda(v: NovaVenda): Promise<{ id: string } | { e
       vencimento: v.pagamento === "fiado" ? v.vencimento || null : null,
       observacoes: v.observacoes.trim() || null,
       desconto_geral: geral,
+      desconto_motivo: geral.tipo === "percent" ? (v.motivoDesconto ?? null) : null,
       itens: itensComRateio,
     },
   });
@@ -132,4 +135,31 @@ export async function reativarVenda(vendaId: string) {
   const { error } = await supabase.rpc("restaurar_exclusao", { p_exclusao: e.id });
   if (error) throw new Error(error.message);
   refresh();
+}
+
+/**
+ * Brinde: tira gramas do estoque (lotes mais antigos) para um cliente, sem valor.
+ * Não entra em faturamento nem lucro. Cancela igual a uma venda.
+ */
+export async function registrarBrinde(b: {
+  cliente_id: string;
+  observacoes: string;
+  itens: { produto_id: string; quantidade: string }[];
+}): Promise<{ id: string } | { erro: string }> {
+  if (!b.cliente_id) return { erro: "Escolha o cliente." };
+  const itens = [];
+  for (const i of b.itens) {
+    const dg = parseGrams(i.quantidade);
+    if (!i.produto_id) return { erro: "Escolha o produto do brinde." };
+    if (!dg || dg <= 0) return { erro: "Quantidade inválida. Ex.: 1 ou 0,5" };
+    itens.push({ produto_id: i.produto_id, quantidade_dg: dg });
+  }
+  if (!itens.length) return { erro: "Escolha o produto do brinde." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("registrar_brinde", {
+    p: { cliente_id: b.cliente_id, observacoes: b.observacoes.trim() || null, itens },
+  });
+  if (error) return { erro: error.message };
+  refresh();
+  return { id: data as string };
 }

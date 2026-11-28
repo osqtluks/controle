@@ -256,7 +256,13 @@ export async function recriarModelo(m: ModeloFaixas) {
 
 export async function atualizarMenuProduto(
   id: string,
-  dados: { menu_estilo?: EstiloMenu; menu_destaque_dg?: number | null; menu_selo?: string | null },
+  dados: {
+    menu_estilo?: EstiloMenu;
+    menu_destaque_dg?: number | null;
+    menu_selo?: string | null;
+    menu_descricao_id?: string | null;
+    menu_sem_descricao?: boolean;
+  },
 ) {
   const supabase = await createClient();
   const { error } = await supabase.from("produtos").update(dados).eq("id", id);

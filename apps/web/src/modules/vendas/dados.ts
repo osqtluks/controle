@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Venda } from "./tipos";
 
 const SELECT =
-  "id, numero, cliente_id, data, pagamento, vencimento, observacoes, subtotal_cents, desconto_cents, total_cents, custo_cents, cancelada_em, desconto_geral_tipo, desconto_geral_bps, desconto_geral_cents, cupom_codigo, cliente:pessoas(nome), itens:venda_itens(id, produto_id, quantidade_dg, faixa, preco_lista_cents_por_grama, desconto_tipo, desconto_valor, subtotal_cents, desconto_cents, total_cents, custo_cents, desconto_geral_cents, produto:produtos(nome))";
+  "id, numero, cliente_id, data, pagamento, brinde, desconto_geral_motivo, vencimento, observacoes, subtotal_cents, desconto_cents, total_cents, custo_cents, cancelada_em, desconto_geral_tipo, desconto_geral_bps, desconto_geral_cents, cupom_codigo, cliente:pessoas(nome), itens:venda_itens(id, produto_id, quantidade_dg, faixa, preco_lista_cents_por_grama, desconto_tipo, desconto_valor, subtotal_cents, desconto_cents, total_cents, custo_cents, desconto_geral_cents, produto:produtos(nome))";
 
 export async function listarVendas(limite = 1000): Promise<Venda[]> {
   const supabase = await createClient();
@@ -26,6 +26,7 @@ export async function totaisDesde(desdeISO: string) {
     .from("vendas")
     .select("total_cents, custo_cents, data")
     .is("cancelada_em", null)
+    .eq("brinde", false)
     .gte("data", desdeISO);
   if (error) throw new Error(error.message);
   return data ?? [];

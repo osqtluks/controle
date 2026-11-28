@@ -16,6 +16,7 @@ const ESTILO: Record<
     preco: string;
     rotulo: string;
     selo: string;
+    descricao: string;
     desconto: string;
     desconto_dest: string;
   }
@@ -31,6 +32,7 @@ const ESTILO: Record<
     preco: "text-fg",
     rotulo: "text-muted",
     selo: "bg-accent/15 text-accent border border-accent/40",
+    descricao: "text-muted",
     desconto: "bg-accent/15 text-accent",
     desconto_dest: "bg-black/15 text-black",
   },
@@ -46,6 +48,7 @@ const ESTILO: Record<
     preco: "text-white drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]",
     rotulo: "text-emerald-200/70",
     selo: "bg-emerald-400/15 text-emerald-300 border border-emerald-400/50 shadow-[0_0_12px_rgba(52,211,153,0.4)]",
+    descricao: "text-emerald-50/80",
     desconto: "bg-emerald-400/20 text-emerald-300",
     desconto_dest: "bg-black/20 text-black",
   },
@@ -61,6 +64,7 @@ const ESTILO: Record<
     preco: "text-white",
     rotulo: "text-amber-200/70",
     selo: "bg-gradient-to-r from-amber-300 to-yellow-500 text-black font-bold",
+    descricao: "text-amber-50/80 italic",
     desconto: "bg-amber-400/15 text-amber-300",
     desconto_dest: "bg-black/15 text-black",
   },
@@ -75,6 +79,7 @@ export interface DadosCardapio {
   estilo: EstiloMenu;
   destaqueDg: number | null;
   selo: string | null;
+  descricao: string | null;
 }
 
 function precoCurto(cents: number) {
@@ -113,6 +118,10 @@ export function CardCardapio({ d, mostrarEstoque, children }: { d: DadosCardapio
             </span>
           )}
         </header>
+
+        {d.descricao && (
+          <p className={cn("-mt-1 mb-4 whitespace-pre-line text-sm leading-relaxed", e.descricao)}>{d.descricao}</p>
+        )}
 
         <ul className="space-y-1.5">
           {faixas.map((f) => {

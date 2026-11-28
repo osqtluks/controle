@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Check, ImageOff, Plus, Ticket, X } from "lucide-react";
+import { Check, Clock, Gift, ImageOff, Plus, Ticket, Trophy, X } from "lucide-react";
 import { toast } from "sonner";
 import {
+  BRINDE_NA_COMPRA_DO_MES,
   calcularItem,
   consumirFifo,
   descontoGeral,
@@ -32,6 +33,7 @@ import {
   ROTULO_DESCONTO,
   type DescontoDigitado,
   type TipoDesconto,
+  type InfoCliente,
 } from "../tipos";
 
 interface Linha {
@@ -258,19 +260,74 @@ function DescontoGeral({
   );
 }
 
+/** Avisos do cliente escolhido: bônus de indicação pronto para aplicar, brinde do mês e entrega. */
+function InfoDoCliente({ info, aplicado, aplicar }: { info: InfoCliente; aplicado: boolean; aplicar: () => void }) {
+  const esta = info.comprasNoMes + 1;
+  const linhas: React.ReactNode[] = [];
+  if (info.bonusBps > 0)
+    linhas.push(
+      <div key="b" className="flex items-center gap-2 rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-200">
+        <Trophy size={14} className="shrink-0" />
+        <span className="flex-1">
+          Bônus de indicação: <b>{formatBps(info.bonusBps)}</b>
+          <span className="block text-[11px] text-violet-200/70">{info.bonusTexto}</span>
+        </span>
+        <button
+          type="button"
+          onClick={aplicar}
+          disabled={aplicado}
+          className="shrink-0 rounded-md bg-violet-400 px-2.5 py-1 font-semibold text-black disabled:opacity-50"
+        >
+          {aplicado ? "Aplicado" : "Aplicar"}
+        </button>
+      </div>,
+    );
+  if (info.brindeGanho && !info.brindeEntregue)
+    linhas.push(
+      <div key="g" className="flex items-center gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+        <Gift size={14} /> Tem brinde do mês para receber (ainda não entregue).
+      </div>,
+    );
+  else if (esta === BRINDE_NA_COMPRA_DO_MES && !info.brindeEntregue)
+    linhas.push(
+      <div key="g" className="flex items-center gap-2 rounded-lg bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">
+        <Gift size={14} /> Esta é a {esta}ª compra do mês: ganha brinde! 🎁
+      </div>,
+    );
+  else if (esta < BRINDE_NA_COMPRA_DO_MES)
+    linhas.push(
+      <p key="g" className="text-[11px] text-muted">
+        {esta}ª compra do mês · brinde na {BRINDE_NA_COMPRA_DO_MES}ª
+      </p>,
+    );
+  if (info.horarios.length)
+    linhas.push(
+      <p key="h" className="flex items-start gap-1 text-[11px] text-muted">
+        <Clock size={12} className="mt-0.5 shrink-0" /> Entrega: {info.horarios.join(" · ")}
+      </p>,
+    );
+  return linhas.length ? <div className="space-y-1.5">{linhas}</div> : null;
+}
+
 export function NovaVenda({
   produtos,
   clientes,
   lotes,
+  infoClientes = {},
+  clienteInicial = null,
 }: {
   produtos: ProdutoCardDados[];
   clientes: OpcaoFornecedor[];
   lotes: Record<string, SaldoDeLote[]>;
+  infoClientes?: Record<string, InfoCliente>;
+  clienteInicial?: string | null;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [linhas, setLinhas] = useState<Linha[]>([]);
-  const [cliente, setCliente] = useState<string | null>(null);
+  const [cliente, setCliente] = useState<string | null>(clienteInicial);
+  /** % aplicado pelo bônus de indicação (para guardar o motivo, se não mudar). */
+  const [pctBonus, setPctBonus] = useState<string | null>(null);
   const [pagamento, setPagamento] = useState<"pago" | "fiado">("pago");
   const [vencimento, setVencimento] = useState("");
   const [obs, setObs] = useState("");
@@ -340,7 +397,10 @@ export function NovaVenda({
     linhasDesconto.push({
       chave: "geral",
       valor: geralCents,
-      motivo: modoGeral === "cupom" && cupom ? `cupom ${cupom.codigo} (${formatBps(cupom.bps)})` : `${formatBps(bpsGeral)} na venda toda`,
+      motivo:
+        modoGeral === "cupom" && cupom
+          ? `cupom ${cupom.codigo} (${formatBps(cupom.bps)})`
+          : `${formatBps(bpsGeral)} na venda toda${pctBonus !== null && pctGeral === pctBonus ? " (bônus de indicação)" : ""}`,
     });
 
   function adicionar(id: string) {
@@ -359,6 +419,7 @@ export function NovaVenda({
         vencimento: vencimento || null,
         observacoes: obs,
         itens: linhas.map((l) => ({ produto_id: l.produto_id, quantidade: l.quantidade, desconto: l.desconto })),
+        motivoDesconto: modoGeral === "percent" && pctBonus !== null && pctGeral === pctBonus ? "bônus de indicação" : null,
         geral:
           modoGeral === "cupom" && codigo
             ? { modo: "cupom", codigo }
@@ -434,6 +495,18 @@ export function NovaVenda({
           <Campo rotulo="Cliente">
             <SeletorFornecedor tipoNovo="cliente" fornecedores={clientes} valor={cliente} aoMudar={setCliente} />
           </Campo>
+          {cliente && infoClientes[cliente] && (
+            <InfoDoCliente
+              info={infoClientes[cliente]}
+              aplicado={modoGeral === "percent" && pctBonus !== null && pctGeral === pctBonus}
+              aplicar={() => {
+                const v = (infoClientes[cliente]!.bonusBps / 100).toLocaleString("pt-BR");
+                setModoGeral("percent");
+                setPctGeral(v);
+                setPctBonus(v);
+              }}
+            />
+          )}
           <DescontoGeral
             modo={modoGeral}
             setModo={setModoGeral}

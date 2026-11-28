@@ -1,30 +1,37 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { Cabecalho, Carregando, Secao } from "@/components/ui/pagina";
-import { listarPessoas } from "@/modules/pessoas/dados";
+import { hojeISO } from "@/lib/datas";
+import { resumosDePessoas } from "@/modules/pessoas/dados";
 import { FormPessoa } from "@/modules/pessoas/componentes/form-pessoa";
 import { ListaPessoas } from "@/modules/pessoas/componentes/lista-pessoas";
 
 export const metadata: Metadata = { title: "Pessoas" };
 
-async function Lista() {
-  return <ListaPessoas pessoas={await listarPessoas()} />;
+async function Conteudo() {
+  await connection();
+  const hoje = hojeISO();
+  const pessoas = await resumosDePessoas(hoje);
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <ListaPessoas pessoas={pessoas} />
+      <aside className="lg:sticky lg:top-6 lg:self-start">
+        <Secao titulo="Nova pessoa">
+          <FormPessoa pessoas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))} hoje={hoje} compacto />
+        </Secao>
+      </aside>
+    </div>
+  );
 }
 
 export default function PessoasPage() {
   return (
-    <div className="mx-auto max-w-5xl">
-      <Cabecalho titulo="Pessoas" sub="Clientes e fornecedores. Rankings e histórico chegam na fase 2." />
-      <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <Suspense fallback={<Carregando linhas={2} />}>
-          <Lista />
-        </Suspense>
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <Secao titulo="Nova pessoa">
-            <FormPessoa />
-          </Secao>
-        </aside>
-      </div>
+    <div className="mx-auto max-w-6xl">
+      <Cabecalho titulo="Pessoas" sub="Clientes e fornecedores: compras, conquistas, brindes e indicações." />
+      <Suspense fallback={<Carregando linhas={4} />}>
+        <Conteudo />
+      </Suspense>
     </div>
   );
 }

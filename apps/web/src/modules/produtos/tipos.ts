@@ -15,6 +15,9 @@ export interface ProdutoEstoque {
   menu_estilo: EstiloMenu;
   menu_destaque_dg: number | null;
   menu_selo: string | null;
+  /** Descrição vitrine escolhida para o Menu (null = a padrão). */
+  menu_descricao_id: string | null;
+  menu_sem_descricao: boolean;
   lim_acabou_dg: number;
   lim_muito_baixo_dg: number;
   lim_acabando_dg: number;

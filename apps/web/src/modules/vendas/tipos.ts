@@ -7,6 +7,9 @@ export interface Venda {
   cliente_id: string | null;
   data: string;
   pagamento: "pago" | "fiado";
+  /** Brinde: saiu do estoque sem valor; fora de faturamento e lucro. */
+  brinde: boolean;
+  desconto_geral_motivo: string | null;
   vencimento: string | null;
   observacoes: string | null;
   subtotal_cents: number;
@@ -78,4 +81,15 @@ const LEGADO: Record<string, number> = { base: 30, de10: 100, de30: 300 };
 export function rotuloDaFaixa(faixa: string): string {
   const dg = LEGADO[faixa] ?? Number(faixa);
   return Number.isFinite(dg) ? rotuloFaixa(dg) : faixa;
+}
+
+/** O que a Nova venda sabe de cada cliente (bônus de indicação, brinde do mês, entrega). */
+export interface InfoCliente {
+  bonusBps: number;
+  bonusTexto: string;
+  comprasNoMes: number;
+  brindeGanho: boolean;
+  brindeEntregue: boolean;
+  horarios: string[];
+  endereco: string | null;
 }

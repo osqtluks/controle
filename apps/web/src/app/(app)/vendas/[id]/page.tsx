@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { formatBps, formatBRL, formatGrams, formatLucro } from "@ct/core";
+import { bonusIndicacao, formatBps, formatBRL, formatGrams, formatLucro, mensagensPosVenda } from "@ct/core";
+import { connection } from "next/server";
+import { MensagemPronta } from "@/components/ui/copiar";
+import { hojeISO } from "@/lib/datas";
+import { dadosIndicacoes } from "@/modules/pessoas/dados";
 import { Cabecalho, Secao } from "@/components/ui/pagina";
 import { cn } from "@/lib/cn";
 import { formatData, formatDataHora } from "@/lib/datas";
@@ -12,6 +16,32 @@ import { BotaoCancelarVenda, BotaoReativarVenda } from "@/modules/vendas/compone
 import { descreverDesconto, rotuloDaFaixa } from "@/modules/vendas/tipos";
 
 export const metadata: Metadata = { title: "Venda" };
+
+/** Depois da venda: cruza compras do mês, brinde e indicações e monta mensagens para copiar. */
+async function Mensagens({ vendaId, clienteId }: { vendaId: string; clienteId: string }) {
+  await connection();
+  const hoje = hojeISO();
+  const { pessoas, base, vendas, compras } = await dadosIndicacoes();
+  const cliente = pessoas.find((p) => p.id === clienteId);
+  if (!cliente) return null;
+  const ind = cliente.indicado_por ? pessoas.find((p) => p.id === cliente.indicado_por) : null;
+  const ms = mensagensPosVenda({
+    cliente: { nome: cliente.nome, telefone: cliente.telefone },
+    compras: compras.get(clienteId) ?? [],
+    vendaId,
+    hoje,
+    bonusCliente: bonusIndicacao(clienteId, base, vendas, hoje),
+    indicador: ind ? { nome: ind.nome, telefone: ind.telefone, bonus: bonusIndicacao(ind.id, base, vendas, hoje) } : null,
+  });
+  if (!ms.length) return null;
+  return (
+    <div className="mb-4 grid gap-2 md:grid-cols-2">
+      {ms.map((m) => (
+        <MensagemPronta key={m.titulo} titulo={m.titulo} texto={m.texto} telefone={m.telefone} />
+      ))}
+    </div>
+  );
+}
 
 async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,7 +54,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
   return (
     <>
       <Cabecalho
-        titulo={`Venda #${v.numero}`}
+        titulo={`${v.brinde ? "Brinde" : "Venda"} #${v.numero}`}
         sub={`${formatDataHora(v.data)}${v.cliente ? ` · ${v.cliente.nome}` : ""}`}
         voltar="/vendas"
         acoes={!v.cancelada_em && <BotaoCancelarVenda id={v.id} numero={v.numero} />}
@@ -39,6 +69,19 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
         </div>
       )}
 
+      {!v.cancelada_em && !v.brinde && v.cliente_id && (
+        <Suspense fallback={null}>
+          <Mensagens vendaId={v.id} clienteId={v.cliente_id} />
+        </Suspense>
+      )}
+
+      {v.brinde ? (
+        <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          🎁 Brinde{v.cliente ? ` para ${v.cliente.nome}` : ""}: {formatGrams(v.itens.reduce((s, i) => s + i.quantidade_dg, 0))} saíram do
+          estoque sem valor. Não entra em faturamento nem lucro.
+          <span className="mt-1 block text-xs text-amber-200/70">Custo dessas gramas no estoque: {formatBRL(v.custo_cents)} (só informativo).</span>
+        </div>
+      ) : (
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
           ["Total", formatBRL(v.total_cents), ""],
@@ -52,6 +95,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
           </div>
         ))}
       </div>
+      )}
 
       <Secao titulo="Itens">
         <div className="overflow-x-auto">
@@ -89,7 +133,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
                     <td className="px-2 py-2 text-right font-medium tabular-nums">{formatBRL(liquido)}</td>
                     <td className="px-2 py-2 text-right tabular-nums text-muted">{formatBRL(i.custo_cents)}</td>
                     <td className={cn("px-2 py-2 text-right tabular-nums", l < 0 ? "text-red-400" : "text-emerald-400")}>
-                      {formatLucro(l)}
+                      {v.brinde ? <span className="text-faint">—</span> : formatLucro(l)}
                     </td>
                   </tr>
                 );
@@ -120,7 +164,7 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
               <span>
                 {v.desconto_geral_tipo === "cupom"
                   ? `cupom ${v.cupom_codigo} (${(v.desconto_geral_bps / 100).toLocaleString("pt-BR")}%)`
-                  : `${(v.desconto_geral_bps / 100).toLocaleString("pt-BR")}% na venda toda`}
+                  : `${(v.desconto_geral_bps / 100).toLocaleString("pt-BR")}% na venda toda${v.desconto_geral_motivo ? ` (${v.desconto_geral_motivo})` : ""}`}
               </span>
               <span className="tabular-nums">−{formatBRL(v.desconto_geral_cents)}</span>
             </div>
@@ -135,7 +179,9 @@ async function Detalhe({ params }: { params: Promise<{ id: string }> }) {
       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div className="rounded-xl border border-line bg-card p-3">
           <div className="text-[11px] text-faint">Pagamento</div>
-          {v.pagamento === "fiado" ? (
+          {v.brinde ? (
+            <span className="text-amber-300">Brinde, sem pagamento</span>
+          ) : v.pagamento === "fiado" ? (
             <>
               <span className="text-orange-300">Fiado{v.vencimento ? ` · combinado para ${formatData(v.vencimento)}` : ""}</span>
               {conta && (

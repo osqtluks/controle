@@ -12,7 +12,8 @@ import type { ProdutoCardDados } from "@/modules/produtos/componentes/card";
 import { EditarPrecos } from "@/modules/produtos/componentes/editar-precos";
 import { limitesDe, tabelaDe, type EstiloMenu } from "@/modules/produtos/tipos";
 import { salvarPrefsMenu } from "../acoes";
-import type { PrefsMenu } from "../tipos";
+import type { DescricaoVitrine, PrefsMenu } from "../tipos";
+import { EscolherDescricao } from "./escolher-descricao";
 import { CardCardapio } from "./card-cardapio";
 
 const ORDEM: OpcaoOrdem<ProdutoCardDados>[] = [
@@ -29,7 +30,7 @@ const ESTILOS: { id: EstiloMenu; rotulo: string; cor: string }[] = [
 ];
 
 /** Controles de aparência de um produto (só aparecem em "Personalizar"; não saem na imagem). */
-function AjustesCard({ p }: { p: ProdutoCardDados }) {
+function AjustesCard({ p, descricoes }: { p: ProdutoCardDados; descricoes: DescricaoVitrine[] }) {
   const [, iniciar] = useTransition();
   const [selo, setSelo] = useState(p.menu_selo ?? "");
   const salvar = (dados: Parameters<typeof atualizarMenuProduto>[1]) =>
@@ -89,12 +90,28 @@ function AjustesCard({ p }: { p: ProdutoCardDados }) {
           />
         </label>
       </div>
+      <EscolherDescricao p={p} descricoes={descricoes} salvar={salvar} />
       <EditarPrecos id={p.id} tabela={faixas} custo={p.custo_ref_cents_por_grama} />
     </div>
   );
 }
 
-export function Catalogo({ produtos, prefs }: { produtos: ProdutoCardDados[]; prefs: PrefsMenu }) {
+/** Texto que vai no card: vitrine escolhida, padrão ou nada. */
+export function descricaoDoMenu(p: ProdutoCardDados, descricoes: DescricaoVitrine[]): string | null {
+  if (p.menu_sem_descricao) return null;
+  const v = p.menu_descricao_id ? descricoes.find((d) => d.id === p.menu_descricao_id) : null;
+  return v?.texto ?? p.descricao?.trim() ?? null;
+}
+
+export function Catalogo({
+  produtos,
+  prefs,
+  descricoes,
+}: {
+  produtos: ProdutoCardDados[];
+  prefs: PrefsMenu;
+  descricoes: DescricaoVitrine[];
+}) {
   const [personalizando, setPersonalizando] = useState(false);
   const [soComEstoque, setSoComEstoque] = useState(true);
   const [titulo, setTitulo] = useState(prefs.titulo);
@@ -258,9 +275,10 @@ export function Catalogo({ produtos, prefs }: { produtos: ProdutoCardDados[]; pr
                 estilo: p.menu_estilo ?? "simples",
                 destaqueDg: p.menu_destaque_dg,
                 selo: p.menu_selo,
+                descricao: descricaoDoMenu(p, descricoes),
               }}
             >
-              {personalizando && <AjustesCard p={p} />}
+              {personalizando && <AjustesCard p={p} descricoes={descricoes.filter((d) => d.produto_id === p.id)} />}
             </CardCardapio>
           ))
         )}

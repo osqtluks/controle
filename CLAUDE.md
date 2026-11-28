@@ -20,6 +20,8 @@ Sistema pessoal (1 usuário) de vendas, estoque, contas a pagar/receber, calend�
 - Histórico de alterações: tabela `historico` (trigger); textos "Você mudou X de A para B" em `modules/produtos/componentes/historico.tsx`.
 - Toda exclusão é reversível: aviso "Desfazer" + registro em `exclusoes` (Histórico de exclusões). Seguir em módulos novos.
 - Contas: parcelas com vencimento original imutável; remarcar via `remarcar_parcela`; pagamentos alocados da parcela mais antiga; tudo em `conta_eventos`.
+- Brinde = venda com `brinde = true` (valor zero, baixa FIFO). Fica FORA de faturamento, lucro e desempenho: todo somatório de vendas filtra `brinde`.
+- Clientes/indicações/conquistas são DERIVADOS das vendas em `@ct/core/clientes` (nada guardado à parte).
 - Toda tabela com ordenação completa (valor, atraso, data, nome) — requisito do usuário.
 
 ## Banco (Supabase)

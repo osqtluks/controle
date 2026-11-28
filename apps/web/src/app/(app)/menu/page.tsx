@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Cabecalho, Carregando } from "@/components/ui/pagina";
 import { listarProdutos } from "@/modules/produtos/dados";
-import { lerPrefsMenu } from "@/modules/menu/dados";
+import { lerPrefsMenu, listarDescricoes } from "@/modules/menu/dados";
 import { Catalogo } from "@/modules/menu/componentes/catalogo";
 
 export const metadata: Metadata = { title: "Menu" };
 
 async function Conteudo() {
-  const [produtos, prefs] = await Promise.all([listarProdutos(), lerPrefsMenu()]);
-  return <Catalogo produtos={produtos} prefs={prefs} />;
+  const [produtos, prefs, descricoes] = await Promise.all([listarProdutos(), lerPrefsMenu(), listarDescricoes()]);
+  return <Catalogo produtos={produtos} prefs={prefs} descricoes={descricoes} />;
 }
 
 export default function MenuPage() {

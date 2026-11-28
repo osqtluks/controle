@@ -17,7 +17,8 @@ const PERIODOS: { id: Periodo; rotulo: string }[] = [
 ];
 
 const gramas = (v: Venda) => v.itens.reduce((s, i) => s + i.quantidade_dg, 0);
-const lucro = (v: Venda) => v.total_cents - v.custo_cents;
+/** Brinde não tem lucro (nem prejuízo): o custo dele fica fora das contas de venda. */
+const lucro = (v: Venda) => (v.brinde ? 0 : v.total_cents - v.custo_cents);
 
 const ORDEM: OpcaoOrdem<Venda>[] = [
   { id: "data", rotulo: "Data", valor: (v) => v.data, padrao: "desc" },
@@ -26,7 +27,7 @@ const ORDEM: OpcaoOrdem<Venda>[] = [
   { id: "gramas", rotulo: "Gramas", valor: gramas, padrao: "desc" },
   { id: "total", rotulo: "Total", valor: (v) => v.total_cents, padrao: "desc" },
   { id: "lucro", rotulo: "Lucro", valor: lucro, padrao: "desc" },
-  { id: "pagamento", rotulo: "Pagamento", valor: (v) => (v.cancelada_em ? "z" : v.pagamento) },
+  { id: "pagamento", rotulo: "Pagamento", valor: (v) => (v.cancelada_em ? "z" : v.brinde ? "brinde" : v.pagamento) },
 ];
 
 function inicioDo(p: Periodo): string | null {
@@ -41,7 +42,7 @@ function inicioDo(p: Periodo): string | null {
 
 export function ListaVendas({ vendas }: { vendas: Venda[] }) {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
-  const [filtro, setFiltro] = useState<"todas" | "pago" | "fiado" | "canceladas">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "pago" | "fiado" | "brindes" | "canceladas">("todas");
 
   const filtradas = useMemo(() => {
     const ini = inicioDo(periodo);
@@ -50,11 +51,12 @@ export function ListaVendas({ vendas }: { vendas: Venda[] }) {
       if (ini && dia < ini) return false;
       if (filtro === "canceladas") return !!v.cancelada_em;
       if (v.cancelada_em) return false;
-      return filtro === "todas" || v.pagamento === filtro;
+      if (filtro === "brindes") return v.brinde;
+      return filtro === "todas" || (!v.brinde && v.pagamento === filtro);
     });
   }, [vendas, periodo, filtro]);
 
-  const validas = filtradas.filter((v) => !v.cancelada_em);
+  const validas = filtradas.filter((v) => !v.cancelada_em && !v.brinde);
   const faturado = validas.reduce((s, v) => s + v.total_cents, 0);
   const lucroTotal = validas.reduce((s, v) => s + lucro(v), 0);
   const ord = useOrdenacao(filtradas, ORDEM, "data");
@@ -73,9 +75,9 @@ export function ListaVendas({ vendas }: { vendas: Venda[] }) {
           ))}
         </div>
         <div className="flex gap-1 rounded-lg border border-line bg-card p-1">
-          {(["todas", "pago", "fiado", "canceladas"] as const).map((f) => (
+          {(["todas", "pago", "fiado", "brindes", "canceladas"] as const).map((f) => (
             <button key={f} type="button" onClick={() => setFiltro(f)} className={chip(filtro === f)}>
-              {f === "todas" ? "Todas" : f === "pago" ? "Recebidas" : f === "fiado" ? "Fiado" : "Canceladas"}
+              {f === "todas" ? "Todas" : f === "pago" ? "Recebidas" : f === "fiado" ? "Fiado" : f === "brindes" ? "Brindes" : "Canceladas"}
             </button>
           ))}
         </div>
@@ -123,11 +125,13 @@ export function ListaVendas({ vendas }: { vendas: Venda[] }) {
                   <td className="px-3 py-2.5 tabular-nums">{formatGrams(gramas(v))}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 font-medium tabular-nums">{formatBRL(v.total_cents)}</td>
                   <td className={cn("whitespace-nowrap px-3 py-2.5 tabular-nums", lucro(v) < 0 ? "text-red-400" : "text-emerald-400")}>
-                    {formatLucro(lucro(v))}
+                    {v.brinde ? <span className="text-faint">—</span> : formatLucro(lucro(v))}
                   </td>
                   <td className="px-3 py-2.5">
                     {v.cancelada_em ? (
                       <span className="rounded-full bg-hover px-2 py-0.5 text-[11px] text-muted">Cancelada</span>
+                    ) : v.brinde ? (
+                      <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300">Brinde</span>
                     ) : v.pagamento === "fiado" ? (
                       <span className="whitespace-nowrap rounded-full bg-orange-500/15 px-2 py-0.5 text-[11px] text-orange-300">
                         Fiado{v.vencimento ? ` · ${formatData(v.vencimento)}` : ""}

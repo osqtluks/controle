@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   HandCoins,
+  Handshake,
   History,
   LayoutDashboard,
   ScrollText,
@@ -30,8 +31,9 @@ export interface Modulo {
 export const MODULOS: Modulo[] = [
   { slug: "", label: "Painel", icon: LayoutDashboard, fase: 5, pronto: true, resumo: "Visão geral, atrasos e alertas" },
   { slug: "produtos", label: "Produtos", icon: Package, fase: 1, pronto: true, resumo: "Catálogo, lotes e níveis de estoque" },
-  { slug: "menu", label: "Menu", icon: ScrollText, fase: 1, pronto: true, resumo: "Preços por faixa: 3 g+, 10 g+, 30 g+" },
-  { slug: "pessoas", label: "Pessoas", icon: Users, fase: 2, pronto: true, resumo: "Clientes e fornecedores, rankings" },
+  { slug: "menu", label: "Menu", icon: ScrollText, fase: 1, pronto: true, resumo: "Cardápio com faixas, estilos e imagem para compartilhar" },
+  { slug: "pessoas", label: "Pessoas", icon: Users, fase: 2, pronto: true, resumo: "Clientes, conquistas, brindes e entrega" },
+  { slug: "indicacoes", label: "Indicações", icon: Handshake, fase: 2, pronto: true, resumo: "Ranking de quem indica e bônus" },
   { slug: "vendas", label: "Vendas", icon: ShoppingCart, fase: 3, pronto: true, resumo: "Saídas, descontos e lucro" },
   { slug: "cupons", label: "Cupons", icon: Ticket, fase: 3, pronto: true, resumo: "Cupons de desconto da semana" },
   { slug: "contas", label: "Contas", icon: HandCoins, fase: 4, pronto: true, resumo: "A pagar e a receber, fiado, parcelas" },
